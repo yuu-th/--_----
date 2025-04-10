@@ -255,21 +255,19 @@ jobs:
             }
           }
 
-          // PDFを生成
+          // PDFを生成する関数（2つの方法を実装）
           async function generatePDF(htmlPath, pdfPath) {
+            // まずwkhtmltopdfを試す（ヘッダー/フッターの表示が確実）
             try {
-              console.log(`PDF生成中: ${htmlPath}`);
+              console.log(`wkhtmltopdfでPDF生成: ${htmlPath}`);
               
-              // HTML内容を読み込み
-              const htmlContent = fs.readFileSync(htmlPath, 'utf-8');
-              const title = path.basename(htmlPath, '.html');
-              const htmlDir = path.dirname(htmlPath);
+              // 必要なディレクトリを作成
               const pdfDir = path.dirname(pdfPath);
-              
-              // PDF用のディレクトリを確保
               ensureDirExists(pdfDir);
               
-              // HTML内で参照されている画像をPDFディレクトリにもコピー
+              // 画像をコピー
+              const htmlContent = fs.readFileSync(htmlPath, 'utf-8');
+              const htmlDir = path.dirname(htmlPath);
               const htmlImages = extractImagesFromHtml(htmlContent);
               for (const imgPath of htmlImages) {
                 const htmlImgPath = path.resolve(htmlDir, imgPath);
@@ -281,198 +279,169 @@ jobs:
                 }
               }
               
-              // ブラウザを起動
-              const browser = await puppeteer.launch({
-                headless: 'new',
-                args: [
-                  '--no-sandbox',
-                  '--disable-setuid-sandbox',
-                  '--disable-dev-shm-usage',
-                  '--disable-gpu',
-                  '--font-render-hinting=none'
-                ]
-              });
-              
-              const page = await browser.newPage();
-              
-              // 現在の日付を日本語形式で取得
+              // 日本語形式の日付とタイトル
               const currentDate = formatJapaneseDate(new Date());
+              const title = path.basename(htmlPath, '.html');
               
-              // PDF向けの強化されたHTMLを作成（ページ全体を埋めるようにスタイル調整）
-              const contentHtml = `
-                <!DOCTYPE html>
-                <html lang="ja">
-                <head>
-                  <meta charset="UTF-8">
-                  <title>${title}</title>
-                  <style>
-                    @font-face {
-                      font-family: 'IPAGothic';
-                      src: local('IPAGothic');
-                    }
-                    @font-face {
-                      font-family: 'IPAMincho';
-                      src: local('IPAMincho');
-                    }
-                    @font-face {
-                      font-family: 'Noto Sans CJK JP';
-                      src: local('Noto Sans CJK JP');
-                    }
-                    /* ルートのスタイルを埋め込み */
-                    ${rootStyleContent}
-                    /* デフォルトスタイル */
-                    * {
-                      -webkit-print-color-adjust: exact !important;
-                      print-color-adjust: exact !important;
-                      box-sizing: border-box;
-                    }
-                    html, body {
-                      font-family: "IPAGothic", "Noto Sans CJK JP", "TakaoGothic", sans-serif !important;
-                      line-height: 1.8;
-                      padding: 0;
-                      margin: 0;
-                      width: 100%;
-                    }
-                    .pdf-content {
-                      padding: 0 30px;
-                      width: 100%;
-                    }
-                    img {
-                      max-width: 100%;
-                      height: auto;
-                    }
-                    pre {
-                      white-space: pre-wrap;
-                      word-wrap: break-word;
-                      overflow-x: hidden;
-                    }
-                    /* HTMLから抽出したスタイル */
-                    ${htmlContent.match(/<style>([\s\S]*?)<\/style>/)?.[1] || ''}
-                  </style>
-                </head>
-                <body>
-                  <div class="pdf-content">
-                    ${htmlContent.match(/<body>([\s\S]*?)<\/body>/)?.[1] || ''}
-                  </div>
-                  
-                  <!-- PDF生成用のスクリプト -->
-                  <script>
-                    // ページ全体の幅を最大化
-                    document.body.style.width = '100%';
-                    document.documentElement.style.width = '100%';
-                    
-                    // ヘッダーとフッター用の空間を確保しつつコンテンツを左右いっぱいに
-                    document.querySelector('.pdf-content').style.paddingTop = '60px';
-                    document.querySelector('.pdf-content').style.paddingBottom = '60px';
-                  </script>
-                </body>
-                </html>
-              `;
+              // wkhtmltopdfコマンドの設定
+              const command = `wkhtmltopdf \
+                --encoding utf-8 \
+                --javascript-delay 1000 \
+                --no-stop-slow-scripts \
+                --page-size A4 \
+                --enable-local-file-access \
+                --margin-top 20 \
+                --margin-bottom 20 \
+                --margin-left 0 \
+                --margin-right 0 \
+                --disable-smart-shrinking \
+                --zoom 0.98 \
+                --header-left "${title}" \
+                --header-right "${currentDate}" \
+                --header-line \
+                --header-spacing 5 \
+                --header-font-name "IPAGothic" \
+                --header-font-size 10 \
+                --footer-right "ページ [page]/[topage]" \
+                --footer-spacing 5 \
+                --footer-line \
+                --footer-font-name "IPAGothic" \
+                --footer-font-size 10 \
+                "${htmlPath}" "${pdfPath}"`;
               
-              // 一時ファイルにHTMLを書き込み
-              const tempHtmlPath = `${htmlPath}.temp.html`;
-              fs.writeFileSync(tempHtmlPath, contentHtml);
+              execSync(command);
               
-              // ファイルをロード
-              await page.goto(`file://${path.resolve(tempHtmlPath)}`, { 
-                waitUntil: 'networkidle0',
-                timeout: 60000 
-              });
-              
-              // ページサイズを設定（A4の幅を明示的に指定）
-              await page.evaluate(() => {
-                document.body.style.width = '21cm'; // A4の幅
-                document.documentElement.style.width = '21cm';
-              });
-              
-              // PDF生成 - ヘッダーとフッターを設定、左右のマージンを0に
-              await page.pdf({
-                path: pdfPath,
-                format: 'A4',
-                printBackground: true,
-                displayHeaderFooter: true,
-                // ヘッダーテンプレート - タイトルと日付を表示
-                headerTemplate: `
-                  <div style="width: 100%; font-size: 10pt; font-family: IPAGothic, Noto Sans CJK JP, sans-serif; 
-                       padding: 10px; margin: 0; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between;">
-                    <div style="margin-left: 10px;">${title}</div>
-                    <div style="margin-right: 10px;">${currentDate}</div>
-                  </div>
-                `,
-                // フッターテンプレート - ページ番号/総ページ数を表示
-                footerTemplate: `
-                  <div style="width: 100%; font-size: 10pt; font-family: IPAGothic, Noto Sans CJK JP, sans-serif; 
-                       padding: 10px; margin: 0; border-top: 1px solid #ddd; text-align: right;">
-                    <div style="margin-right: 10px;"><span class="pageNumber"></span>/<span class="totalPages"></span></div>
-                  </div>
-                `,
-                margin: {
-                  top: '60px',      // ヘッダー用の余白
-                  bottom: '60px',   // フッター用の余白
-                  left: '0',        // 左マージンを0に設定
-                  right: '0'        // 右マージンを0に設定
-                },
-                preferCSSPageSize: false
-              });
-              
-              // 一時ファイル削除
-              fs.unlinkSync(tempHtmlPath);
-              
-              await browser.close();
-              
-              // PDFが生成されたか確認
               if (fs.existsSync(pdfPath) && fs.statSync(pdfPath).size > 0) {
-                console.log(`PDF生成成功: ${pdfPath}`);
+                console.log(`wkhtmltopdfでPDF生成成功: ${pdfPath}`);
                 return true;
               } else {
-                console.error(`PDF生成失敗: ファイルサイズが0またはファイルがありません`);
-                return false;
+                console.error(`wkhtmltopdfでPDF生成失敗`);
+                throw new Error('wkhtmltopdf failed');
               }
-              
             } catch (error) {
-              console.error(`PDFの生成に失敗: ${htmlPath}:`, error);
+              console.error(`wkhtmltopdfエラー: ${error}`);
               
+              // wkhtmltopdfが失敗した場合、Puppeteerを試す
               try {
-                console.log(`代替PDF生成を試行: ${htmlPath}`);
+                console.log(`Puppeteerを使用してPDF生成: ${htmlPath}`);
                 
-                // 日本語形式の日付
-                const currentDate = formatJapaneseDate(new Date());
+                // HTML内容を読み込み
+                const htmlContent = fs.readFileSync(htmlPath, 'utf-8');
                 const title = path.basename(htmlPath, '.html');
                 
-                // wkhtmltopdfを使用した代替方法
-                const command = `wkhtmltopdf \
-                  --encoding utf-8 \
-                  --javascript-delay 1000 \
-                  --no-stop-slow-scripts \
-                  --page-size A4 \
-                  --page-width 210mm \
-                  --enable-local-file-access \
-                  --zoom 0.97 \
-                  --margin-top 25 \
-                  --margin-bottom 25 \
-                  --margin-left 0 \
-                  --margin-right 0 \
-                  --disable-smart-shrinking \
-                  --header-left "${title}" \
-                  --header-right "${currentDate}" \
-                  --header-line \
-                  --header-spacing 10 \
-                  --footer-right "ページ [page]/[topage]" \
-                  --footer-spacing 10 \
-                  --footer-line \
-                  "${htmlPath}" "${pdfPath}"`;
+                // ブラウザを起動
+                const browser = await puppeteer.launch({
+                  headless: 'new',
+                  args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-gpu',
+                    '--font-render-hinting=none'
+                  ]
+                });
                 
-                execSync(command);
+                const page = await browser.newPage();
+                
+                // 現在の日付
+                const currentDate = formatJapaneseDate(new Date());
+                
+                // ヘッダー/フッターを含むPDF用HTML
+                const contentHtml = `
+                  <!DOCTYPE html>
+                  <html lang="ja">
+                  <head>
+                    <meta charset="UTF-8">
+                    <title>${title}</title>
+                    <style>
+                      @font-face {
+                        font-family: 'IPAGothic';
+                        src: local('IPAGothic');
+                      }
+                      @font-face {
+                        font-family: 'Noto Sans CJK JP';
+                        src: local('Noto Sans CJK JP');
+                      }
+                      html, body {
+                        width: 100%;
+                        margin: 0;
+                        padding: 0;
+                        font-family: "IPAGothic", "Noto Sans CJK JP", sans-serif !important;
+                      }
+                      .pdf-content {
+                        padding: 10px 20px;
+                        box-sizing: border-box;
+                      }
+                      /* ルートのスタイル */
+                      ${rootStyleContent}
+                      /* HTMLから抽出したスタイル */
+                      ${htmlContent.match(/<style>([\s\S]*?)<\/style>/)?.[1] || ''}
+                    </style>
+                  </head>
+                  <body>
+                    <div class="pdf-content">
+                      ${htmlContent.match(/<body>([\s\S]*?)<\/body>/)?.[1] || ''}
+                    </div>
+                  </body>
+                  </html>
+                `;
+                
+                // 一時ファイルに保存
+                const tempHtmlPath = `${htmlPath}.temp.html`;
+                fs.writeFileSync(tempHtmlPath, contentHtml);
+                
+                await page.goto(`file://${path.resolve(tempHtmlPath)}`, { 
+                  waitUntil: 'networkidle0',
+                  timeout: 60000 
+                });
+                
+                // 確実に日本語フォントを適用
+                await page.evaluate(() => {
+                  document.body.style.fontFamily = '"IPAGothic", "Noto Sans CJK JP", sans-serif';
+                });
+                
+                // PDF生成 - ヘッダーとフッター用に適切な余白を設定
+                await page.pdf({
+                  path: pdfPath,
+                  format: 'A4',
+                  printBackground: true,
+                  displayHeaderFooter: true,
+                  headerTemplate: `
+                    <div style="width: 100%; font-size: 10pt; font-family: 'IPAGothic', 'Noto Sans CJK JP', sans-serif; 
+                         padding: 5px 20px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between;">
+                      <div style="margin-left: 10px;">${title}</div>
+                      <div style="margin-right: 10px;">${currentDate}</div>
+                    </div>
+                  `,
+                  footerTemplate: `
+                    <div style="width: 100%; font-size: 10pt; font-family: 'IPAGothic', 'Noto Sans CJK JP', sans-serif; 
+                         padding: 5px 20px; border-top: 1px solid #ddd; text-align: right;">
+                      <div style="margin-right: 10px;"><span class="pageNumber"></span>/<span class="totalPages"></span></div>
+                    </div>
+                  `,
+                  // 注意: ヘッダー/フッターを表示するために必要な上下のマージンを設定
+                  margin: {
+                    top: '70px',     // ヘッダー用
+                    bottom: '70px',  // フッター用
+                    left: '0px',     // 左右はゼロ
+                    right: '0px'
+                  }
+                });
+                
+                // 一時ファイル削除
+                fs.unlinkSync(tempHtmlPath);
+                
+                await browser.close();
                 
                 if (fs.existsSync(pdfPath) && fs.statSync(pdfPath).size > 0) {
-                  console.log(`代替PDF生成成功: ${pdfPath}`);
+                  console.log(`Puppeteerでのバックアップ生成成功: ${pdfPath}`);
                   return true;
                 } else {
-                  console.error(`代替PDF生成失敗`);
+                  console.error(`Puppeteerでもバックアップ生成失敗`);
                   return false;
                 }
-              } catch (fallbackError) {
-                console.error(`代替PDF生成も失敗:`, fallbackError);
+              } catch (puppeteerError) {
+                console.error(`PuppeteerでのバックアップエラーB: ${puppeteerError}`);
                 return false;
               }
             }
