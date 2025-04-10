@@ -1,4 +1,4 @@
-name: Convert Markdown to HTML
+name: Convert Markdown to HTML and PDF
 
 on:
   push:
@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: |
           npm init -y
-          npm install --save marked
+          npm install --save marked puppeteer
 
       - name: Create conversion script
         run: |
@@ -31,12 +31,21 @@ jobs:
           const fs = require('fs');
           const path = require('path');
           const marked = require('marked');
+          const puppeteer = require('puppeteer');
+
+          // Check if root style.css exists
+          const rootStyleExists = fs.existsSync('./style.css');
+          const rootStyleContent = rootStyleExists ? fs.readFileSync('./style.css', 'utf-8') : '';
 
           function convertToHtml(mdFile, outputHtmlPath) {
             try {
               console.log(`Converting ${mdFile} to HTML...`);
               const content = fs.readFileSync(mdFile, 'utf-8');
               const html = marked.parse(content);
+              
+              // Get relative path to root for style.css link
+              const depth = outputHtmlPath.split('/').length - 2;
+              const rootPath = depth > 0 ? '../'.repeat(depth) : './';
               
               const styledHtml = `
                 <!DOCTYPE html>
@@ -45,6 +54,7 @@ jobs:
                   <meta charset="UTF-8">
                   <meta name="viewport" content="width=device-width, initial-scale=1.0">
                   <title>${path.basename(mdFile, '.md')}</title>
+                  ${rootStyleExists ? `<link rel="stylesheet" href="${rootPath}style.css">` : ''}
                   <style>
                     body {
                       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -91,6 +101,16 @@ jobs:
                     th {
                       background-color: #f6f8fa;
                     }
+                    @media print {
+                      @page {
+                        size: A4;
+                        margin: 2cm;
+                      }
+                      body {
+                        max-width: none;
+                        padding: 0;
+                      }
+                    }
                   </style>
                 </head>
                 <body>
@@ -107,10 +127,119 @@ jobs:
             }
           }
 
-          function processMarkdownFiles() {
-            // Create output directory
+          async function generatePDF(htmlPath, pdfPath) {
+            try {
+              console.log(`Generating PDF for ${htmlPath}...`);
+              const browser = await puppeteer.launch({
+                args: ['--no-sandbox', '--disable-setuid-sandbox'],
+              });
+              const page = await browser.newPage();
+              
+              // Read the HTML file
+              const htmlContent = fs.readFileSync(htmlPath, 'utf-8');
+              
+              // Create PDF optimized HTML with inline styles and headers/footers
+              const pdfHtml = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                  <meta charset="UTF-8">
+                  <style>
+                    @page {
+                      size: A4;
+                      margin: 2cm;
+                    }
+                    /* Include the root style.css content directly */
+                    ${rootStyleContent}
+                    /* Default styling */
+                    body {
+                      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                      line-height: 1.6;
+                      padding: 20px;
+                    }
+                    /* Header and footer styles */
+                    .header, .footer {
+                      position: fixed;
+                      width: 100%;
+                      padding: 10px 20px;
+                      background-color: #f5f5f5;
+                      border-bottom: 1px solid #ddd;
+                    }
+                    .header {
+                      top: 0;
+                    }
+                    .footer {
+                      bottom: 0;
+                      text-align: right;
+                    }
+                    .content {
+                      margin-top: 70px;
+                      margin-bottom: 70px;
+                    }
+                    /* Extract other styles from the HTML */
+                    ${htmlContent.match(/<style>([\s\S]*?)<\/style>/)?.[1] || ''}
+                  </style>
+                </head>
+                <body>
+                  <div class="header">
+                    ${path.basename(htmlPath, '.html')} - ${new Date().toISOString().split('T')[0]}
+                  </div>
+                  <div class="content">
+                    ${htmlContent.match(/<body>([\s\S]*?)<\/body>/)?.[1] || ''}
+                  </div>
+                  <div class="footer">
+                    Page <span class="pageNumber"></span> of <span class="totalPages"></span>
+                  </div>
+                  <script>
+                    // Add page numbers during print
+                    window.addEventListener('load', function() {
+                      const style = document.createElement('style');
+                      style.textContent = '@page { counter-increment: page; @bottom-right { content: "Page " counter(page) " of " counter(pages); } }';
+                      document.head.appendChild(style);
+                    });
+                  </script>
+                </body>
+                </html>
+              `;
+              
+              await page.setContent(pdfHtml, { waitUntil: 'networkidle0' });
+              
+              // Set A4 page size
+              await page.pdf({
+                path: pdfPath,
+                format: 'A4',
+                printBackground: true, // Important to reflect background colors
+                displayHeaderFooter: true,
+                headerTemplate: '<div style="width: 100%; font-size: 10px; padding: 5px 20px; text-align: left; border-bottom: 1px solid #ddd;">{{title}}</div>',
+                footerTemplate: '<div style="width: 100%; font-size: 10px; padding: 5px 20px; text-align: right; border-top: 1px solid #ddd;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>',
+                margin: {
+                  top: '100px',
+                  bottom: '100px',
+                  left: '50px',
+                  right: '50px'
+                }
+              });
+              
+              await browser.close();
+              return true;
+            } catch (error) {
+              console.error(`Error generating PDF for ${htmlPath}:`, error);
+              return false;
+            }
+          }
+
+          async function processMarkdownFiles() {
+            // Create output directories
             if (!fs.existsSync('output/html')) {
               fs.mkdirSync('output/html', { recursive: true });
+            }
+            if (!fs.existsSync('output/pdf')) {
+              fs.mkdirSync('output/pdf', { recursive: true });
+            }
+            
+            // Copy style.css to output directory if it exists
+            if (rootStyleExists) {
+              fs.copyFileSync('./style.css', './output/style.css');
             }
 
             // Find all markdown files
@@ -134,6 +263,7 @@ jobs:
             console.log(`Found ${mdFiles.length} markdown files`);
             
             const htmlFiles = [];
+            const pdfFiles = [];
 
             for (const mdFile of mdFiles) {
               const baseName = path.basename(mdFile, '.md');
@@ -146,13 +276,23 @@ jobs:
                 if (!fs.existsSync(`output/html/${relativePath}`)) {
                   fs.mkdirSync(`output/html/${relativePath}`, { recursive: true });
                 }
+                if (!fs.existsSync(`output/pdf/${relativePath}`)) {
+                  fs.mkdirSync(`output/pdf/${relativePath}`, { recursive: true });
+                }
               }
               
               const htmlPath = `output/html/${outputDir}${baseName}.html`;
+              const pdfPath = `output/pdf/${outputDir}${baseName}.pdf`;
               
               if (convertToHtml(mdFile, htmlPath)) {
                 const displayPath = outputDir ? `${outputDir}${baseName}` : baseName;
                 htmlFiles.push({ name: displayPath, path: htmlPath });
+                
+                // Generate PDF
+                const pdfSuccess = await generatePDF(htmlPath, pdfPath);
+                if (pdfSuccess) {
+                  pdfFiles.push({ name: displayPath, path: pdfPath });
+                }
               }
             }
 
@@ -186,6 +326,8 @@ jobs:
                   padding: 8px;
                   background-color: #f5f5f5;
                   border-radius: 4px;
+                  display: flex;
+                  justify-content: space-between;
                 }
                 .file-list a {
                   text-decoration: none;
@@ -194,15 +336,33 @@ jobs:
                 .file-list a:hover {
                   text-decoration: underline;
                 }
+                .formats {
+                  display: flex;
+                  gap: 10px;
+                }
+                .pdf-link {
+                  color: #d64541;
+                }
               </style>
             </head>
             <body>
               <h1>Markdown Documents</h1>
               
               <div class="section">
-                <h2>HTML Versions</h2>
+                <h2>Documents</h2>
                 <ul class="file-list">
-                  ${htmlFiles.map(file => `<li><a href="${file.path}">${file.name}</a></li>`).join('\n')}
+                  ${htmlFiles.map(file => {
+                    const pdfFile = pdfFiles.find(pdf => pdf.name === file.name);
+                    return `
+                      <li>
+                        <span>${file.name}</span>
+                        <div class="formats">
+                          <a href="${file.path}" target="_blank">HTML</a>
+                          ${pdfFile ? `<a href="${pdfFile.path}" class="pdf-link" target="_blank">PDF</a>` : ''}
+                        </div>
+                      </li>
+                    `;
+                  }).join('\n')}
                 </ul>
               </div>
             </body>
@@ -213,7 +373,10 @@ jobs:
             console.log('Generated index.html with links to all converted files');
           }
 
-          processMarkdownFiles();
+          // Use async IIFE to allow await
+          (async () => {
+            await processMarkdownFiles();
+          })();
           EOL
 
       - name: Convert files
@@ -227,5 +390,5 @@ jobs:
       - name: Commit changes
         run: |
           git add output/ index.html
-          git commit -m "Convert Markdown to HTML [automated]" || echo "No changes to commit"
+          git commit -m "Convert Markdown to HTML and PDF [automated]" || echo "No changes to commit"
           git push origin HEAD:${GITHUB_REF#refs/heads/}
