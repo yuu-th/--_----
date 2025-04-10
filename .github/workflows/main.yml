@@ -336,7 +336,7 @@ jobs:
                       src: local('Noto Sans CJK JP');
                     }
                     @page {
-                      size: A4;
+                      size: A3;
                       margin: 0;
                     }
                     /* ルートのスタイルを埋め込み */
