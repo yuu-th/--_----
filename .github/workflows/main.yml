@@ -489,13 +489,25 @@ jobs:
               ensureDirExists(htmlDir);
               ensureDirExists(pdfDir);
               
-              // marp_style.cssをコピーして利用
-              let cssOption = '';
+              // marp_style.cssの処理 - 重要な修正部分
+              let themeArgs = [];
               if (marpStyleExists) {
-                const marpStyleOutPath = path.join(htmlDir, 'marp_style.css');
-                copyFile('./marp_style.css', marpStyleOutPath);
-                cssOption = `--theme ${marpStyleOutPath}`;
+                // 絶対パスを使用して確実に参照できるようにする
+                const marpStyleAbsolutePath = path.resolve('./marp_style.css');
+                console.log(`Marpスタイル適用: ${marpStyleAbsolutePath}`);
+                
+                // 引数を個別に配列に追加（文字列連結ではなく）
+                themeArgs = ['--theme', marpStyleAbsolutePath];
               }
+              
+              // 一時的な設定ファイルを作成してMarpに認識させる
+              const tempConfigPath = path.join(process.cwd(), '.marp.config.js');
+              fs.writeFileSync(tempConfigPath, `
+                module.exports = {
+                  allowLocalFiles: true,
+                  themeSet: ['${path.resolve('./marp_style.css').replace(/\\/g, '\\\\')}']
+                };
+              `);
               
               // マークダウンの内容を読み込む
               const mdContent = fs.readFileSync(marpFile, 'utf-8');
@@ -513,21 +525,34 @@ jobs:
                 }
               }
               
-              // HTMLエクスポート
-              await marpCli([
+              // HTMLエクスポート - 修正: 配列をフラット化して正しく引数を渡す
+              console.log('Marp HTML生成開始...');
+              const htmlArgs = [
                 marpFile,
                 '--html',
-                cssOption,
+                ...themeArgs,
+                '--allow-local-files',
                 '-o', outputHtmlPath
-              ].filter(Boolean));
+              ];
+              console.log('Marp HTML引数:', htmlArgs.join(' '));
+              await marpCli(htmlArgs);
               
-              // PDFエクスポート
-              await marpCli([
-                marpFile,
+              // PDFエクスポート - 修正: 配列をフラット化して正しく引数を渡す
+              console.log('Marp PDF生成開始...');
+              const pdfArgs = [
+                marpFile, 
                 '--pdf',
-                cssOption,
+                ...themeArgs,
+                '--allow-local-files',
                 '-o', outputPdfPath
-              ].filter(Boolean));
+              ];
+              console.log('Marp PDF引数:', pdfArgs.join(' '));
+              await marpCli(pdfArgs);
+              
+              // 一時設定ファイルを削除
+              if (fs.existsSync(tempConfigPath)) {
+                fs.unlinkSync(tempConfigPath);
+              }
               
               return {
                 htmlSuccess: fs.existsSync(outputHtmlPath),
