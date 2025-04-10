@@ -5,6 +5,7 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>index</title>
+        
         <style>
           body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -50,6 +51,16 @@
           }
           th {
             background-color: #f6f8fa;
+          }
+          @media print {
+            @page {
+              size: A4;
+              margin: 2cm;
+            }
+            body {
+              max-width: none;
+              padding: 0;
+            }
           }
         </style>
       </head>

@@ -27,6 +27,8 @@
         padding: 8px;
         background-color: #f5f5f5;
         border-radius: 4px;
+        display: flex;
+        justify-content: space-between;
       }
       .file-list a {
         text-decoration: none;
@@ -35,18 +37,57 @@
       .file-list a:hover {
         text-decoration: underline;
       }
+      .formats {
+        display: flex;
+        gap: 10px;
+      }
+      .pdf-link {
+        color: #d64541;
+      }
     </style>
   </head>
   <body>
     <h1>Markdown Documents</h1>
     
     <div class="section">
-      <h2>HTML Versions</h2>
+      <h2>Documents</h2>
       <ul class="file-list">
-        <li><a href="output/html/AI班/体験/index.html">AI班/体験/index</a></li>
-<li><a href="output/html/README.html">README</a></li>
-<li><a href="output/html/WEB班/体験/index.html">WEB班/体験/index</a></li>
-<li><a href="output/html/ゲーム班/体験/index.html">ゲーム班/体験/index</a></li>
+        
+            <li>
+              <span>AI班/体験/index</span>
+              <div class="formats">
+                <a href="output/html/AI班/体験/index.html" target="_blank">HTML</a>
+                <a href="output/pdf/AI班/体験/index.pdf" class="pdf-link" target="_blank">PDF</a>
+              </div>
+            </li>
+          
+
+            <li>
+              <span>README</span>
+              <div class="formats">
+                <a href="output/html/README.html" target="_blank">HTML</a>
+                <a href="output/pdf/README.pdf" class="pdf-link" target="_blank">PDF</a>
+              </div>
+            </li>
+          
+
+            <li>
+              <span>WEB班/体験/index</span>
+              <div class="formats">
+                <a href="output/html/WEB班/体験/index.html" target="_blank">HTML</a>
+                <a href="output/pdf/WEB班/体験/index.pdf" class="pdf-link" target="_blank">PDF</a>
+              </div>
+            </li>
+          
+
+            <li>
+              <span>ゲーム班/体験/index</span>
+              <div class="formats">
+                <a href="output/html/ゲーム班/体験/index.html" target="_blank">HTML</a>
+                <a href="output/pdf/ゲーム班/体験/index.pdf" class="pdf-link" target="_blank">PDF</a>
+              </div>
+            </li>
+          
       </ul>
     </div>
   </body>
