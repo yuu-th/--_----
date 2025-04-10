@@ -28,7 +28,20 @@ jobs:
       - name: Install Japanese fonts
         run: |
           sudo apt-get update
-          sudo apt-get install -y fonts-ipafont-gothic fonts-ipafont-mincho fonts-noto-cjk
+          sudo apt-get install -y \
+            fonts-ipafont-gothic \
+            fonts-ipafont-mincho \
+            fonts-noto-cjk \
+            fonts-noto-cjk-extra \
+            language-pack-ja \
+            fonts-takao \
+            fonts-mplus
+
+      - name: Configure locale
+        run: |
+          sudo locale-gen ja_JP.UTF-8
+          echo "LANG=ja_JP.UTF-8" | sudo tee -a /etc/environment
+          echo "LC_ALL=ja_JP.UTF-8" | sudo tee -a /etc/environment
 
       - name: Create conversion script
         run: |
@@ -37,79 +50,73 @@ jobs:
           const path = require('path');
           const marked = require('marked');
           const puppeteer = require('puppeteer');
+          const { execSync } = require('child_process');
 
-          // Check if root style.css exists
+          // ルートのstyle.cssの存在確認
           const rootStyleExists = fs.existsSync('./style.css');
           const rootStyleContent = rootStyleExists ? fs.readFileSync('./style.css', 'utf-8') : '';
 
-          // Function to copy a file
+          // ディレクトリを再帰的に作成
+          function ensureDirExists(dirPath) {
+            if (!fs.existsSync(dirPath)) {
+              fs.mkdirSync(dirPath, { recursive: true });
+            }
+          }
+
+          // ファイルをコピーする関数
           function copyFile(source, target) {
             try {
-              // Create directory if it doesn't exist
-              const targetDir = path.dirname(target);
-              if (!fs.existsSync(targetDir)) {
-                fs.mkdirSync(targetDir, { recursive: true });
-              }
+              ensureDirExists(path.dirname(target));
               fs.copyFileSync(source, target);
               return true;
             } catch (error) {
-              console.error(`Error copying file ${source} to ${target}:`, error);
+              console.error(`ファイルコピーエラー ${source} -> ${target}:`, error);
               return false;
             }
           }
 
-          // Function to copy all assets (images, etc.)
-          function copyAssets(sourceDir, targetDir, excludeDirs = ['node_modules', '.git', 'output']) {
-            const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico'];
+          // ディレクトリ全体をコピー
+          function copyEntireDirectory(src, dest, excludeDirs = ['node_modules', '.git', 'output']) {
+            ensureDirExists(dest);
             
-            function copyAssetsRecursive(dir, targetBase) {
-              const entries = fs.readdirSync(dir, { withFileTypes: true });
+            const entries = fs.readdirSync(src, { withFileTypes: true });
+            
+            for (const entry of entries) {
+              const srcPath = path.join(src, entry.name);
+              const destPath = path.join(dest, entry.name);
               
-              for (const entry of entries) {
-                if (excludeDirs.includes(entry.name)) continue;
-                
-                const sourcePath = path.join(dir, entry.name);
-                const targetPath = path.join(targetBase, entry.name);
-                
-                if (entry.isDirectory()) {
-                  copyAssetsRecursive(sourcePath, targetPath);
-                } else if (entry.isFile()) {
-                  const ext = path.extname(entry.name).toLowerCase();
-                  if (imageExtensions.includes(ext)) {
-                    copyFile(sourcePath, targetPath);
-                  }
+              if (entry.isDirectory()) {
+                if (!excludeDirs.includes(entry.name)) {
+                  copyEntireDirectory(srcPath, destPath, excludeDirs);
                 }
+              } else {
+                copyFile(srcPath, destPath);
               }
             }
+          }
+
+          // Markdownから画像パスを抽出
+          function extractImagesFromMarkdown(mdContent) {
+            const imageRegex = /!\[[^\]]*\]\(([^)]+)\)/g;
+            const images = [];
+            let match;
             
-            copyAssetsRecursive(sourceDir, targetDir);
+            while ((match = imageRegex.exec(mdContent)) !== null) {
+              images.push(match[1]);
+            }
+            
+            return images;
           }
 
-          // Function to fix image paths in HTML content for PDF generation
-          function fixImagePathsForPdf(htmlContent, basePath) {
-            // Convert relative image paths to absolute paths
-            return htmlContent.replace(
-              /(src|href)="(?!http|\/\/|data:)(.*?)"/g,
-              (match, attr, url) => {
-                // Adjust the URL to point to the copied image in the output directory
-                if (path.extname(url).match(/\.(png|jpg|jpeg|gif|svg|webp|bmp|ico)/i)) {
-                  const absolutePath = path.join(process.cwd(), 'output', url);
-                  return `${attr}="${absolutePath}"`;
-                }
-                return match;
-              }
-            );
-          }
-
-          // Function to extract images from HTML
+          // HTMLから画像パスを抽出
           function extractImagesFromHtml(htmlContent) {
             const imageRegex = /<img[^>]+src="([^"]+)"[^>]*>/g;
             const images = [];
             let match;
             
-            while (match = imageRegex.exec(htmlContent)) {
+            while ((match = imageRegex.exec(htmlContent)) !== null) {
+              // 外部URLやdata URIは除外
               const src = match[1];
-              // Only include relative paths, not external URLs or data URIs
               if (!src.startsWith('http') && !src.startsWith('//') && !src.startsWith('data:')) {
                 images.push(src);
               }
@@ -118,28 +125,60 @@ jobs:
             return images;
           }
 
+          // マークダウンをHTMLに変換
           function convertToHtml(mdFile, outputHtmlPath) {
             try {
-              console.log(`Converting ${mdFile} to HTML...`);
-              const content = fs.readFileSync(mdFile, 'utf-8');
-              const html = marked.parse(content);
+              console.log(`変換中: ${mdFile} -> HTML`);
+              const mdContent = fs.readFileSync(mdFile, 'utf-8');
+              const mdDirectory = path.dirname(mdFile);
+              const outputDirectory = path.dirname(outputHtmlPath);
               
-              // Get relative path to root for style.css link
-              const depth = outputHtmlPath.split('/').length - 2;
+              // マークダウンから画像パスを抽出
+              const mdImages = extractImagesFromMarkdown(mdContent);
+              
+              // 抽出した画像ファイルをコピー
+              for (const imgPath of mdImages) {
+                const absoluteImgPath = path.resolve(mdDirectory, imgPath);
+                const relativeToRoot = path.relative('.', absoluteImgPath);
+                const outputImgPath = path.join('output/html', relativeToRoot);
+                
+                console.log(`画像をコピー: ${absoluteImgPath} -> ${outputImgPath}`);
+                ensureDirExists(path.dirname(outputImgPath));
+                
+                if (fs.existsSync(absoluteImgPath)) {
+                  copyFile(absoluteImgPath, outputImgPath);
+                } else {
+                  console.warn(`警告: 画像が見つかりません: ${absoluteImgPath}`);
+                }
+              }
+              
+              // マークダウンをHTMLに変換
+              const html = marked.parse(mdContent);
+              
+              // ルートへの相対パスを計算
+              const depth = path.relative('output/html', outputDirectory).split(path.sep).length;
               const rootPath = depth > 0 ? '../'.repeat(depth) : './';
               
               const styledHtml = `
                 <!DOCTYPE html>
-                <html>
+                <html lang="ja">
                 <head>
                   <meta charset="UTF-8">
                   <meta name="viewport" content="width=device-width, initial-scale=1.0">
                   <title>${path.basename(mdFile, '.md')}</title>
                   ${rootStyleExists ? `<link rel="stylesheet" href="${rootPath}style.css">` : ''}
                   <style>
-                    body {
-                      font-family: "Hiragino Kaku Gothic ProN", "ヒラギノ角ゴ ProN W3", "Meiryo", "メイリオ", "MS PGothic", "MS Pゴシック", "Noto Sans CJK JP", sans-serif;
-                      line-height: 1.6;
+                    @font-face {
+                      font-family: 'IPAGothic';
+                      src: local('IPAGothic');
+                    }
+                    @font-face {
+                      font-family: 'IPAMincho';
+                      src: local('IPAMincho');
+                    }
+                    html, body {
+                      font-family: "IPAGothic", "Noto Sans CJK JP", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+                      line-height: 1.8;
                       padding: 20px;
                       max-width: 800px;
                       margin: 0 auto;
@@ -168,6 +207,7 @@ jobs:
                     }
                     img {
                       max-width: 100%;
+                      height: auto;
                     }
                     table {
                       border-collapse: collapse;
@@ -200,38 +240,59 @@ jobs:
                 </html>
               `;
               
-              // Extract images from the generated HTML
-              const images = extractImagesFromHtml(html);
-              
-              // Copy each image to the output directory maintaining relative paths
-              const mdDir = path.dirname(mdFile);
-              const outputDir = path.dirname(outputHtmlPath);
-              
-              images.forEach(imgSrc => {
-                const imgFullPath = path.join(mdDir, imgSrc);
-                const imgOutputPath = path.join(outputDir, imgSrc);
-                
-                // Try to copy the image if it exists
-                if (fs.existsSync(imgFullPath)) {
-                  copyFile(imgFullPath, imgOutputPath);
-                } else {
-                  console.warn(`Warning: Image not found: ${imgFullPath}`);
+              // HTMLから画像パスを再確認
+              const htmlImages = extractImagesFromHtml(html);
+              for (const imgPath of htmlImages) {
+                if (!mdImages.includes(imgPath)) {
+                  // マークダウンから抽出されなかった画像があれば追加でコピー
+                  const absoluteImgPath = path.resolve(mdDirectory, imgPath);
+                  const relativeToRoot = path.relative('.', absoluteImgPath);
+                  const outputImgPath = path.join('output/html', relativeToRoot);
+                  
+                  console.log(`追加画像をコピー: ${absoluteImgPath} -> ${outputImgPath}`);
+                  ensureDirExists(path.dirname(outputImgPath));
+                  
+                  if (fs.existsSync(absoluteImgPath)) {
+                    copyFile(absoluteImgPath, outputImgPath);
+                  }
                 }
-              });
+              }
               
               fs.writeFileSync(outputHtmlPath, styledHtml);
               return true;
             } catch (error) {
-              console.error(`Error processing ${mdFile}:`, error);
+              console.error(`エラー: ${mdFile} の処理中:`, error);
               return false;
             }
           }
 
+          // PDFを生成
           async function generatePDF(htmlPath, pdfPath) {
             try {
-              console.log(`Generating PDF for ${htmlPath}...`);
+              console.log(`PDF生成中: ${htmlPath}`);
               
-              // Launch browser with specific args for GitHub Actions environment
+              // HTML内容を読み込み
+              const htmlContent = fs.readFileSync(htmlPath, 'utf-8');
+              const title = path.basename(htmlPath, '.html');
+              const htmlDir = path.dirname(htmlPath);
+              const pdfDir = path.dirname(pdfPath);
+              
+              // PDF用のディレクトリを確保
+              ensureDirExists(pdfDir);
+              
+              // HTML内で参照されている画像をPDFディレクトリにもコピー
+              const htmlImages = extractImagesFromHtml(htmlContent);
+              for (const imgPath of htmlImages) {
+                const htmlImgPath = path.resolve(htmlDir, imgPath);
+                const pdfImgPath = path.resolve(pdfDir, imgPath);
+                
+                if (fs.existsSync(htmlImgPath)) {
+                  ensureDirExists(path.dirname(pdfImgPath));
+                  copyFile(htmlImgPath, pdfImgPath);
+                }
+              }
+              
+              // ブラウザを起動
               const browser = await puppeteer.launch({
                 headless: 'new',
                 args: [
@@ -239,185 +300,191 @@ jobs:
                   '--disable-setuid-sandbox',
                   '--disable-dev-shm-usage',
                   '--disable-gpu',
-                  '--font-render-hinting=none' // Helps with font rendering
+                  '--font-render-hinting=none'
                 ]
               });
               
               const page = await browser.newPage();
               
-              // Read the HTML file
-              const htmlContent = fs.readFileSync(htmlPath, 'utf-8');
-              const title = path.basename(htmlPath, '.html');
-              const basePath = path.dirname(htmlPath);
-              
-              // Fix image paths to use absolute paths
-              const fixedHtmlContent = fixImagePathsForPdf(htmlContent, basePath);
-              
-              // Create PDF optimized HTML with inline styles and headers/footers
-              const pdfHtml = `
+              // PDF向けの強化されたHTMLを作成
+              const enhancedHtml = `
                 <!DOCTYPE html>
-                <html>
+                <html lang="ja">
                 <head>
                   <meta charset="UTF-8">
                   <title>${title}</title>
                   <style>
+                    @font-face {
+                      font-family: 'IPAGothic';
+                      src: local('IPAGothic');
+                    }
+                    @font-face {
+                      font-family: 'IPAMincho';
+                      src: local('IPAMincho');
+                    }
+                    @font-face {
+                      font-family: 'Noto Sans CJK JP';
+                      src: local('Noto Sans CJK JP');
+                    }
                     @page {
                       size: A4;
                       margin: 2cm;
                     }
-                    /* Include the root style.css content directly */
+                    /* ルートのスタイルを埋め込み */
                     ${rootStyleContent}
-                    /* Default styling */
-                    body {
-                      font-family: "IPAGothic", "IPAPGothic", "VL Gothic", "Noto Sans CJK JP", "TakaoGothic", "Yu Gothic", "Meiryo UI", sans-serif;
-                      line-height: 1.6;
-                      padding: 20px;
+                    /* デフォルトスタイル */
+                    * {
+                      -webkit-print-color-adjust: exact !important;
+                      print-color-adjust: exact !important;
                     }
-                    /* Header and footer styles */
+                    html, body {
+                      font-family: "IPAGothic", "Noto Sans CJK JP", "TakaoGothic", sans-serif !important;
+                      line-height: 1.8;
+                      padding: 20px;
+                      margin: 0;
+                    }
+                    /* ヘッダーとフッターのスタイル */
                     .header, .footer {
-                      position: fixed;
-                      width: 100%;
+                      width: calc(100% - 40px);
                       padding: 10px 20px;
                       background-color: #f5f5f5;
                       border-bottom: 1px solid #ddd;
-                      font-family: "IPAGothic", "IPAPGothic", "VL Gothic", "Noto Sans CJK JP", sans-serif;
+                      font-family: "IPAGothic", "Noto Sans CJK JP", sans-serif !important;
                     }
                     .header {
-                      top: 0;
+                      margin-bottom: 30px;
                     }
                     .footer {
-                      bottom: 0;
+                      margin-top: 30px;
                       text-align: right;
+                      border-top: 1px solid #ddd;
+                      border-bottom: none;
                     }
                     .content {
-                      margin-top: 70px;
-                      margin-bottom: 70px;
+                      min-height: 700px;
                     }
                     img {
                       max-width: 100%;
                       height: auto;
                     }
-                    /* Extract other styles from the HTML */
+                    pre {
+                      white-space: pre-wrap;
+                      word-wrap: break-word;
+                    }
+                    /* HTMLから抽出したスタイル */
                     ${htmlContent.match(/<style>([\s\S]*?)<\/style>/)?.[1] || ''}
                   </style>
                 </head>
                 <body>
                   <div class="header">
-                    ${title} - ${new Date().toISOString().split('T')[0]}
+                    ${title} - ${new Date().toLocaleDateString('ja-JP')}
                   </div>
                   <div class="content">
-                    ${fixedHtmlContent.match(/<body>([\s\S]*?)<\/body>/)?.[1] || ''}
+                    ${htmlContent.match(/<body>([\s\S]*?)<\/body>/)?.[1] || ''}
                   </div>
                   <div class="footer">
-                    Page <span class="pageNumber"></span> of <span class="totalPages"></span>
+                    ページ <span class="pageNumber"></span> / <span class="totalPages"></span>
                   </div>
                 </body>
                 </html>
               `;
               
-              await page.setContent(pdfHtml, { 
+              // 一時ファイルにHTMLを書き込み
+              const tempHtmlPath = `${htmlPath}.temp.html`;
+              fs.writeFileSync(tempHtmlPath, enhancedHtml);
+              
+              // ファイルをロード
+              await page.goto(`file://${path.resolve(tempHtmlPath)}`, { 
                 waitUntil: 'networkidle0',
-                timeout: 60000 // Increase timeout to 60s
+                timeout: 60000 
               });
               
-              // Set default font when applicable
-              await page.evaluate(() => {
-                document.body.style.fontFamily = '"IPAGothic", "Noto Sans CJK JP", sans-serif';
+              // 追加の日本語フォント設定
+              await page.evaluateHandle(() => {
+                document.querySelectorAll('*').forEach(el => {
+                  const style = window.getComputedStyle(el);
+                  if (style.fontFamily) {
+                    el.style.fontFamily = '"IPAGothic", "Noto Sans CJK JP", ' + style.fontFamily;
+                  }
+                });
               });
               
-              // Generate PDF with A4 size
+              // PDF生成
               await page.pdf({
                 path: pdfPath,
                 format: 'A4',
                 printBackground: true,
-                displayHeaderFooter: true,
-                headerTemplate: '<div style="width: 100%; font-size: 10px; padding: 5px 20px; text-align: left; border-bottom: 1px solid #ddd; font-family: \'IPAGothic\', sans-serif;">{{title}}</div>',
-                footerTemplate: '<div style="width: 100%; font-size: 10px; padding: 5px 20px; text-align: right; border-top: 1px solid #ddd; font-family: \'IPAGothic\', sans-serif;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>',
                 margin: {
-                  top: '100px',
-                  bottom: '100px',
-                  left: '50px',
-                  right: '50px'
+                  top: '1.5cm',
+                  bottom: '1.5cm',
+                  left: '1cm',
+                  right: '1cm'
                 }
               });
               
-              await browser.close();
-              return true;
-            } catch (error) {
-              console.error(`Error generating PDF for ${htmlPath}:`, error);
+              // 一時ファイル削除
+              fs.unlinkSync(tempHtmlPath);
               
-              // Fallback method if the above fails
-              try {
-                console.log(`Trying fallback PDF generation for ${htmlPath}...`);
-                const browser = await puppeteer.launch({
-                  headless: true,
-                  args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-                });
-                
-                const page = await browser.newPage();
-                
-                // Read the HTML file and fix paths
-                const htmlContent = fs.readFileSync(htmlPath, 'utf-8');
-                const fixedHtmlContent = fixImagePathsForPdf(htmlContent, path.dirname(htmlPath));
-                
-                // Write a temporary file with fixed paths
-                const tempHtmlPath = htmlPath.replace('.html', '-temp.html');
-                fs.writeFileSync(tempHtmlPath, fixedHtmlContent);
-                
-                await page.goto(`file://${path.resolve(tempHtmlPath)}`, {
-                  waitUntil: 'networkidle0',
-                  timeout: 60000
-                });
-                
-                // Set font for Japanese text
-                await page.evaluate(() => {
-                  document.body.style.fontFamily = '"IPAGothic", "Noto Sans CJK JP", sans-serif';
-                });
-                
-                // Simple PDF generation without streams
-                await page.pdf({
-                  path: pdfPath,
-                  format: 'A4',
-                  printBackground: true,
-                  margin: {
-                    top: '1cm',
-                    bottom: '1cm',
-                    left: '1cm',
-                    right: '1cm'
-                  }
-                });
-                
-                // Clean up temporary file
-                fs.unlinkSync(tempHtmlPath);
-                
-                await browser.close();
+              await browser.close();
+              
+              // PDFが生成されたか確認
+              if (fs.existsSync(pdfPath) && fs.statSync(pdfPath).size > 0) {
+                console.log(`PDF生成成功: ${pdfPath}`);
                 return true;
+              } else {
+                console.error(`PDF生成失敗: ファイルサイズが0またはファイルがありません`);
+                return false;
+              }
+              
+            } catch (error) {
+              console.error(`PDFの生成に失敗: ${htmlPath}:`, error);
+              
+              try {
+                console.log(`代替PDF生成を試行: ${htmlPath}`);
+                
+                // システムコマンドでwkhtmltopdfを使用した代替方法
+                const command = `wkhtmltopdf \
+                  --encoding utf-8 \
+                  --javascript-delay 1000 \
+                  --no-stop-slow-scripts \
+                  --margin-top 15 \
+                  --margin-bottom 15 \
+                  --margin-left 10 \
+                  --margin-right 10 \
+                  --page-size A4 \
+                  --enable-local-file-access \
+                  "${htmlPath}" "${pdfPath}"`;
+                
+                execSync(command);
+                
+                if (fs.existsSync(pdfPath) && fs.statSync(pdfPath).size > 0) {
+                  console.log(`代替PDF生成成功: ${pdfPath}`);
+                  return true;
+                } else {
+                  console.error(`代替PDF生成失敗`);
+                  return false;
+                }
               } catch (fallbackError) {
-                console.error(`Fallback PDF generation also failed: ${fallbackError}`);
+                console.error(`代替PDF生成も失敗:`, fallbackError);
                 return false;
               }
             }
           }
 
+          // マークダウンファイルを処理
           async function processMarkdownFiles() {
-            // Create output directories
-            if (!fs.existsSync('output/html')) {
-              fs.mkdirSync('output/html', { recursive: true });
-            }
-            if (!fs.existsSync('output/pdf')) {
-              fs.mkdirSync('output/pdf', { recursive: true });
-            }
+            // 出力ディレクトリを作成
+            ensureDirExists('output/html');
+            ensureDirExists('output/pdf');
             
-            // Copy style.css to output directory if it exists
+            // style.cssがあれば出力ディレクトリにコピー
             if (rootStyleExists) {
-              fs.copyFileSync('./style.css', './output/style.css');
+              console.log('style.cssをコピーしています...');
+              copyFile('./style.css', './output/html/style.css');
+              copyFile('./style.css', './output/pdf/style.css');
             }
             
-            // Copy all image assets to output directory
-            console.log('Copying image assets to output directory...');
-            copyAssets('.', './output');
-
-            // Find all markdown files
+            // マークダウンファイルを検索
             const getFiles = (dir, ext, files = []) => {
               const entries = fs.readdirSync(dir, { withFileTypes: true });
               
@@ -435,52 +502,48 @@ jobs:
             };
 
             const mdFiles = getFiles('.', '.md');
-            console.log(`Found ${mdFiles.length} markdown files`);
+            console.log(`${mdFiles.length}個のマークダウンファイルを検出しました`);
             
             const htmlFiles = [];
             const pdfFiles = [];
 
+            // 各マークダウンファイルを処理
             for (const mdFile of mdFiles) {
               const baseName = path.basename(mdFile, '.md');
-              const relativePath = path.dirname(mdFile).replace('./', '');
-              let outputDir = '';
+              const relPath = path.relative('.', path.dirname(mdFile));
+              let outputDir = relPath;
               
-              // Create nested directory structure in output if needed
-              if (relativePath && relativePath !== '.') {
-                outputDir = relativePath + '/';
-                if (!fs.existsSync(`output/html/${relativePath}`)) {
-                  fs.mkdirSync(`output/html/${relativePath}`, { recursive: true });
-                }
-                if (!fs.existsSync(`output/pdf/${relativePath}`)) {
-                  fs.mkdirSync(`output/pdf/${relativePath}`, { recursive: true });
-                }
-              }
+              // HTML出力先の設定
+              const htmlPath = path.join('output/html', outputDir, `${baseName}.html`);
+              ensureDirExists(path.dirname(htmlPath));
               
-              const htmlPath = `output/html/${outputDir}${baseName}.html`;
-              const pdfPath = `output/pdf/${outputDir}${baseName}.pdf`;
+              // PDF出力先の設定
+              const pdfPath = path.join('output/pdf', outputDir, `${baseName}.pdf`);
+              ensureDirExists(path.dirname(pdfPath));
               
+              // HTMLに変換
               if (convertToHtml(mdFile, htmlPath)) {
-                const displayPath = outputDir ? `${outputDir}${baseName}` : baseName;
-                htmlFiles.push({ name: displayPath, path: htmlPath });
+                const displayPath = path.join(outputDir, baseName).replace(/\\/g, '/');
+                htmlFiles.push({ name: displayPath, path: htmlPath.replace(/\\/g, '/') });
                 
-                // Generate PDF
+                // PDFを生成
                 const pdfSuccess = await generatePDF(htmlPath, pdfPath);
                 if (pdfSuccess) {
-                  pdfFiles.push({ name: displayPath, path: pdfPath });
+                  pdfFiles.push({ name: displayPath, path: pdfPath.replace(/\\/g, '/') });
                 }
               }
             }
 
-            // Generate index.html
+            // index.htmlを生成
             const indexHtml = `
             <!DOCTYPE html>
             <html lang="ja">
             <head>
               <meta charset="UTF-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>Markdown Documents</title>
+              <title>ドキュメント一覧</title>
               <style>
-                body {
+                html, body {
                   font-family: "Hiragino Kaku Gothic ProN", "ヒラギノ角ゴ ProN W3", "Meiryo", "メイリオ", "MS PGothic", "MS Pゴシック", "Noto Sans CJK JP", sans-serif;
                   max-width: 800px;
                   margin: 0 auto;
@@ -488,6 +551,7 @@ jobs:
                 }
                 h1 {
                   text-align: center;
+                  margin-bottom: 30px;
                 }
                 .section {
                   margin-bottom: 30px;
@@ -498,22 +562,26 @@ jobs:
                 }
                 .file-list li {
                   margin: 8px 0;
-                  padding: 8px;
+                  padding: 12px;
                   background-color: #f5f5f5;
                   border-radius: 4px;
                   display: flex;
                   justify-content: space-between;
+                  align-items: center;
                 }
                 .file-list a {
                   text-decoration: none;
                   color: #0366d6;
+                  padding: 4px 8px;
+                  border-radius: 3px;
                 }
                 .file-list a:hover {
                   text-decoration: underline;
+                  background-color: rgba(3, 102, 214, 0.1);
                 }
                 .formats {
                   display: flex;
-                  gap: 10px;
+                  gap: 15px;
                 }
                 .pdf-link {
                   color: #d64541;
@@ -521,10 +589,9 @@ jobs:
               </style>
             </head>
             <body>
-              <h1>Markdown Documents</h1>
+              <h1>ドキュメント一覧</h1>
               
               <div class="section">
-                <h2>Documents</h2>
                 <ul class="file-list">
                   ${htmlFiles.map(file => {
                     const pdfFile = pdfFiles.find(pdf => pdf.name === file.name);
@@ -545,14 +612,23 @@ jobs:
             `;
 
             fs.writeFileSync('index.html', indexHtml);
-            console.log('Generated index.html with links to all converted files');
+            console.log('すべてのファイルへのリンクを含むindex.htmlを生成しました');
           }
 
-          // Use async IIFE to allow await
+          // 非同期処理の実行
           (async () => {
             await processMarkdownFiles();
           })();
           EOL
+
+      - name: Install wkhtmltopdf as fallback
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wkhtmltopdf xvfb
+          echo '#!/bin/bash
+          xvfb-run -a -s "-screen 0 1280x1024x24" wkhtmltopdf "$@"' | sudo tee /usr/local/bin/wkhtmltopdf-xvfb
+          sudo chmod +x /usr/local/bin/wkhtmltopdf-xvfb
+          sudo ln -sf /usr/local/bin/wkhtmltopdf-xvfb /usr/local/bin/wkhtmltopdf
 
       - name: Convert files
         run: node convert.js
