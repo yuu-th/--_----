@@ -390,7 +390,7 @@ jobs:
 
                 printBackground: true,
                 displayHeaderFooter: true,
-                scale: 1.0,
+                scale: 0.9,
                 
                 // ヘッダーテンプレート - タイトルと日付を表示
                 headerTemplate: `
