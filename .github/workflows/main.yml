@@ -406,7 +406,8 @@ jobs:
               await page.pdf({
                 path: pdfPath,
                 format: 'A4',
-                printBackground: true,
+
+                // printBackground: true,
                 // displayHeaderFooter: true,
                 /*
                 // ヘッダーテンプレート - タイトルと日付を表示
