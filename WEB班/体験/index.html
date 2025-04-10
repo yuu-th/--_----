@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>資料.md</title>
+<title>index.md</title>
 <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
 
 <style>
@@ -353,7 +353,7 @@ code {
 }
 
 </style>
-
+<link rel="stylesheet" href="file:///i%3A/%E6%83%85%E7%A0%94/WEB%E7%8F%AD/%E4%BD%93%E9%A8%93/style.css" type="text/css">
 <script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
 </head>
 <body>
@@ -399,7 +399,7 @@ code {
 <p>次に、今回使うプロジェクトをこのVSCodeで開いてみましょう！！！
 なので、「Control(Ctrl) + J」キーを同時に押して、ターミナルを開きます。
 そして、以下のコマンドをコピー&amp;&amp;ペーストしてください</p>
-<pre class="hljs"><code><div>curl -L <span class="hljs-string">"https://drive.google.com/uc?export=download&amp;id=1ZWuMAd8hAv_ZD2rabZOSCfkW4ozBl4xf"</span> -o %USERPROFILE%\Downloads\jouken.zip &amp;&amp; mkdir %USERPROFILE%\Downloads\jouken  &amp;&amp; tar -xf %USERPROFILE%\Downloads\jouken.zip -C %USERPROFILE%\Downloads\jouken  &amp;&amp; code %USERPROFILE%\Downloads\jouken\体験資料
+<pre class="hljs"><code><div>powershell -Command <span class="hljs-string">"Invoke-WebRequest -Uri 'https://drive.google.com/uc?export=download&amp;id=1ZWuMAd8hAv_ZD2rabZOSCfkW4ozBl4xf' -OutFile "</span><span class="hljs-variable">$env</span>:USERPROFILE\Downloads\jouken.zip<span class="hljs-string">"; New-Item -ItemType Directory -Path "</span><span class="hljs-variable">$env</span>:USERPROFILE\Downloads\jouken<span class="hljs-string">" -Force; Expand-Archive -Path "</span><span class="hljs-variable">$env</span>:USERPROFILE\Downloads\jouken.zip<span class="hljs-string">" -DestinationPath "</span><span class="hljs-variable">$env</span>:USERPROFILE\Downloads\jouken<span class="hljs-string">" -Force; code "</span><span class="hljs-variable">$env</span>:USERPROFILE\Downloads\jouken\体験資料<span class="hljs-string">""</span>
 </div></code></pre>
 <p>これで、インターネットから、データをダウンロードしてきて、VSCodeでフォルダが開かれます。</p>
 <h2 id="%E5%AE%9F%E9%9A%9B%E3%81%AB%E3%83%97%E3%83%AD%E3%82%B0%E3%83%A9%E3%83%A0%E3%82%92%E6%9B%B8%E3%81%84%E3%81%A6%E3%81%BF%E3%82%88%E3%81%86">実際にプログラムを書いてみよう</h2>
