@@ -1,15 +1,23 @@
 
       <!DOCTYPE html>
-      <html>
+      <html lang="ja">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>index</title>
         
         <style>
-          body {
-            font-family: "Hiragino Kaku Gothic ProN", "ヒラギノ角ゴ ProN W3", "Meiryo", "メイリオ", "MS PGothic", "MS Pゴシック", "Noto Sans CJK JP", sans-serif;
-            line-height: 1.6;
+          @font-face {
+            font-family: 'IPAGothic';
+            src: local('IPAGothic');
+          }
+          @font-face {
+            font-family: 'IPAMincho';
+            src: local('IPAMincho');
+          }
+          html, body {
+            font-family: "IPAGothic", "Noto Sans CJK JP", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+            line-height: 1.8;
             padding: 20px;
             max-width: 800px;
             margin: 0 auto;
@@ -38,6 +46,7 @@
           }
           img {
             max-width: 100%;
+            height: auto;
           }
           table {
             border-collapse: collapse;
