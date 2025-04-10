@@ -421,7 +421,7 @@ jobs:
                     <span><span class="pageNumber"></span>/<span class="totalPages"></span></span>
                   </div>
                 `,
-                */
+              
                 margin: {
                   top: '1.5cm',    // ヘッダー用の余白
                   bottom: '1cm',  // フッター用の余白
