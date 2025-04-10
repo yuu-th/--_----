@@ -18,12 +18,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '16'
+          node-version: '18'  # Upgrading to Node.js 18 for better web streams support
 
       - name: Install dependencies
         run: |
           npm init -y
-          npm install --save marked puppeteer
+          npm install --save marked puppeteer@19.7.0  # Pinning puppeteer version for compatibility
 
       - name: Create conversion script
         run: |
@@ -130,13 +130,23 @@ jobs:
           async function generatePDF(htmlPath, pdfPath) {
             try {
               console.log(`Generating PDF for ${htmlPath}...`);
+              
+              // Launch browser with specific args for GitHub Actions environment
               const browser = await puppeteer.launch({
-                args: ['--no-sandbox', '--disable-setuid-sandbox'],
+                headless: 'new',  // Use new headless mode
+                args: [
+                  '--no-sandbox',
+                  '--disable-setuid-sandbox',
+                  '--disable-dev-shm-usage',  // Helps with memory issues in CI
+                  '--disable-gpu'
+                ]
               });
+              
               const page = await browser.newPage();
               
               // Read the HTML file
               const htmlContent = fs.readFileSync(htmlPath, 'utf-8');
+              const title = path.basename(htmlPath, '.html');
               
               // Create PDF optimized HTML with inline styles and headers/footers
               const pdfHtml = `
@@ -144,6 +154,7 @@ jobs:
                 <html>
                 <head>
                   <meta charset="UTF-8">
+                  <title>${title}</title>
                   <style>
                     @page {
                       size: A4;
@@ -182,7 +193,7 @@ jobs:
                 </head>
                 <body>
                   <div class="header">
-                    ${path.basename(htmlPath, '.html')} - ${new Date().toISOString().split('T')[0]}
+                    ${title} - ${new Date().toISOString().split('T')[0]}
                   </div>
                   <div class="content">
                     ${htmlContent.match(/<body>([\s\S]*?)<\/body>/)?.[1] || ''}
@@ -190,25 +201,17 @@ jobs:
                   <div class="footer">
                     Page <span class="pageNumber"></span> of <span class="totalPages"></span>
                   </div>
-                  <script>
-                    // Add page numbers during print
-                    window.addEventListener('load', function() {
-                      const style = document.createElement('style');
-                      style.textContent = '@page { counter-increment: page; @bottom-right { content: "Page " counter(page) " of " counter(pages); } }';
-                      document.head.appendChild(style);
-                    });
-                  </script>
                 </body>
                 </html>
               `;
               
               await page.setContent(pdfHtml, { waitUntil: 'networkidle0' });
               
-              // Set A4 page size
+              // Generate PDF with A4 size
               await page.pdf({
                 path: pdfPath,
                 format: 'A4',
-                printBackground: true, // Important to reflect background colors
+                printBackground: true,
                 displayHeaderFooter: true,
                 headerTemplate: '<div style="width: 100%; font-size: 10px; padding: 5px 20px; text-align: left; border-bottom: 1px solid #ddd;">{{title}}</div>',
                 footerTemplate: '<div style="width: 100%; font-size: 10px; padding: 5px 20px; text-align: right; border-top: 1px solid #ddd;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>',
@@ -224,7 +227,39 @@ jobs:
               return true;
             } catch (error) {
               console.error(`Error generating PDF for ${htmlPath}:`, error);
-              return false;
+              
+              // Fallback method if the above fails
+              try {
+                console.log(`Trying fallback PDF generation for ${htmlPath}...`);
+                const browser = await puppeteer.launch({
+                  headless: true,  // Use old headless mode as fallback
+                  args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+                });
+                
+                const page = await browser.newPage();
+                await page.goto(`file://${path.resolve(htmlPath)}`, {
+                  waitUntil: 'networkidle0'
+                });
+                
+                // Simple PDF generation without streams
+                await page.pdf({
+                  path: pdfPath,
+                  format: 'A4',
+                  printBackground: true,
+                  margin: {
+                    top: '1cm',
+                    bottom: '1cm',
+                    left: '1cm',
+                    right: '1cm'
+                  }
+                });
+                
+                await browser.close();
+                return true;
+              } catch (fallbackError) {
+                console.error(`Fallback PDF generation also failed: ${fallbackError}`);
+                return false;
+              }
             }
           }
 
