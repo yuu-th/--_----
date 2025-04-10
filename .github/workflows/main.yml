@@ -231,16 +231,6 @@ jobs:
                     th {
                       background-color: #f6f8fa;
                     }
-                    @media print {
-                      @page {
-                        size: A4;
-                        margin: 2cm;
-                      }
-                      body {
-                        max-width: none;
-                        padding: 0;
-                      }
-                    }
                   </style>
                 </head>
                 <body>
@@ -335,12 +325,7 @@ jobs:
                       font-family: 'Noto Sans CJK JP';
                       src: local('Noto Sans CJK JP');
                     }
-                    /*
-                    @page {
-                      size: 210mm 257mm;
-                      margin: 0;
-                    }
-                    */
+
                     /* ルートのスタイルを埋め込み */
                     ${rootStyleContent}
                     /* デフォルトスタイル */
@@ -405,10 +390,11 @@ jobs:
 
                 printBackground: true,
                 displayHeaderFooter: true,
+                scale: 1.1,
                 
                 // ヘッダーテンプレート - タイトルと日付を表示
                 headerTemplate: `
-                  <div style="font-size: 10pt; font-family: IPAGothic, Noto Sans CJK JP, sans-serif; 
+                  <div style="width: 100%;font-size: 10pt; font-family: IPAGothic, Noto Sans CJK JP, sans-serif; 
                        padding-right: 10px;padding-left: 10px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between;">
                     <div>${title}</div>
                     <div>${currentDate}</div>
@@ -417,7 +403,7 @@ jobs:
                 // フッターテンプレート - ページ番号/総ページ数を表示
                 footerTemplate: `
                   <div style="width: 100%; font-size: 10pt; font-family: IPAGothic, Noto Sans CJK JP, sans-serif; 
-                       padding-right: 10px:padding-left: 10px; border-top: 1px solid #ddd; text-align: right;">
+                       padding-right: 10px;padding-left: 10px; border-top: 1px solid #ddd; text-align: right;">
                     <span><span class="pageNumber"></span>/<span class="totalPages"></span></span>
                   </div>
                 `,
