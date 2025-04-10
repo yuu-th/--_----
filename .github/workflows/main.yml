@@ -336,7 +336,7 @@ jobs:
                       src: local('Noto Sans CJK JP');
                     }
                     @page {
-                      size: A3;
+                      size: 210mm 257mm; /* 幅 高さ */
                       margin: 0;
                     }
                     /* ルートのスタイルを埋め込み */
@@ -405,12 +405,10 @@ jobs:
               // PDF生成 - ヘッダーとフッターを設定、左右のマージンを0に
               await page.pdf({
                 path: pdfPath,
-                // format: 'A4',
-                width: '210mm',
-                //height: '293mm',
-                height: '253mm',
+                format: 'A4',
                 printBackground: true,
                 displayHeaderFooter: true,
+                
                 // ヘッダーテンプレート - タイトルと日付を表示
                 headerTemplate: `
                   <div style="width: 100%; font-size: 10pt; font-family: IPAGothic, Noto Sans CJK JP, sans-serif; 
@@ -426,9 +424,10 @@ jobs:
                     <span><span class="pageNumber"></span>/<span class="totalPages"></span></span>
                   </div>
                 `,
+                
                 margin: {
-                  top: '20mm',    // ヘッダー用の余白
-                  bottom: '20mm',  // フッター用の余白
+                  top: '0',    // ヘッダー用の余白
+                  bottom: '0',  // フッター用の余白
                   left: '0',       // 左マージンを0に設定
                   right: '0'       // 右マージンを0に設定
                 },
