@@ -394,16 +394,16 @@ jobs:
                 
                 // ヘッダーテンプレート - タイトルと日付を表示
                 headerTemplate: `
-                  <div style="font-size: 9px; margin-left: 1cm;"> <span class='title'></span></div> <div style="font-size: 9px; margin-left: auto; margin-right: 1cm; ">%%ISO-DATE%%</div>
+                  <div style="font-size: 9px; margin-left: 1cm;"> <span class='title'></span></div> <div style="font-size: 9px; margin-left: auto; margin-right: 1cm; ">${currentDate}</div>
                 `,
                 // フッターテンプレート - ページ番号/総ページ数を表示
                 footerTemplate: `
-                  <div style="font-size: 9px; margin: 0;"> <span class='pageNumber'></span> / <span class='totalPages'></span></div>
+                  <div style="font-size: 9px; margin: 0 auto;"> <span class='pageNumber'></span> / <span class='totalPages'></span></div>
                 `,
               
                 margin: {
                   top: '1cm',    // ヘッダー用の余白
-                  bottom: '0.6cm',  // フッター用の余白
+                  bottom: '1cm',  // フッター用の余白
                   left: '0',       // 左マージンを0に設定
                   right: '0'       // 右マージンを0に設定
                 },
