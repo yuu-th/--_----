@@ -392,7 +392,7 @@ jobs:
               // 現在の日付を日本語形式で取得
               const currentDate = formatJapaneseDate(new Date());
               
-              // PDF生成 - ヘッダーとフッターを設定
+              // PDF生成 - ヘッダーとフッターを設定、左右のマージンを0に
               await page.pdf({
                 path: pdfPath,
                 format: 'A4',
@@ -416,8 +416,8 @@ jobs:
                 margin: {
                   top: '100px',    // ヘッダー用の余白
                   bottom: '80px',  // フッター用の余白
-                  left: '0px',
-                  right: '0px'
+                  left: '0',       // 左マージンを0に設定
+                  right: '0'       // 右マージンを0に設定
                 }
               });
               
@@ -445,15 +445,15 @@ jobs:
                 const currentDate = formatJapaneseDate(new Date());
                 const title = path.basename(htmlPath, '.html');
                 
-                // wkhtmltopdfを使用した代替方法 - ヘッダーとフッターを設定
+                // wkhtmltopdfを使用した代替方法 - ヘッダーとフッターを設定、左右のマージンを0に
                 const command = `wkhtmltopdf \
                   --encoding utf-8 \
                   --javascript-delay 1000 \
                   --no-stop-slow-scripts \
                   --margin-top 25 \
                   --margin-bottom 25 \
-                  --margin-left 15 \
-                  --margin-right 15 \
+                  --margin-left 0 \
+                  --margin-right 0 \
                   --page-size A4 \
                   --enable-local-file-access \
                   --header-left "${title}" \
