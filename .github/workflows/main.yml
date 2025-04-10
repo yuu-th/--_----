@@ -75,26 +75,6 @@ jobs:
             }
           }
 
-          // ディレクトリ全体をコピー
-          function copyEntireDirectory(src, dest, excludeDirs = ['node_modules', '.git', 'output']) {
-            ensureDirExists(dest);
-            
-            const entries = fs.readdirSync(src, { withFileTypes: true });
-            
-            for (const entry of entries) {
-              const srcPath = path.join(src, entry.name);
-              const destPath = path.join(dest, entry.name);
-              
-              if (entry.isDirectory()) {
-                if (!excludeDirs.includes(entry.name)) {
-                  copyEntireDirectory(srcPath, destPath, excludeDirs);
-                }
-              } else {
-                copyFile(srcPath, destPath);
-              }
-            }
-          }
-
           // 日付を日本語形式（YYYY/MM/DD）にフォーマット
           function formatJapaneseDate(date) {
             const d = new Date(date);
@@ -234,7 +214,7 @@ jobs:
                     @media print {
                       @page {
                         size: A4;
-                        margin: 2cm;
+                        margin: 0;
                       }
                       body {
                         max-width: none;
@@ -315,7 +295,10 @@ jobs:
               
               const page = await browser.newPage();
               
-              // PDF向けの強化されたHTMLを作成（ヘッダー/フッターなし）
+              // 現在の日付を日本語形式で取得
+              const currentDate = formatJapaneseDate(new Date());
+              
+              // PDF向けの強化されたHTMLを作成（ページ全体を埋めるようにスタイル調整）
               const contentHtml = `
                 <!DOCTYPE html>
                 <html lang="ja">
@@ -335,21 +318,24 @@ jobs:
                       font-family: 'Noto Sans CJK JP';
                       src: local('Noto Sans CJK JP');
                     }
-                    @page {
-                      size: A4;
-                    }
                     /* ルートのスタイルを埋め込み */
                     ${rootStyleContent}
                     /* デフォルトスタイル */
                     * {
                       -webkit-print-color-adjust: exact !important;
                       print-color-adjust: exact !important;
+                      box-sizing: border-box;
                     }
                     html, body {
                       font-family: "IPAGothic", "Noto Sans CJK JP", "TakaoGothic", sans-serif !important;
                       line-height: 1.8;
-                      padding: 20px;
+                      padding: 0;
                       margin: 0;
+                      width: 100%;
+                    }
+                    .pdf-content {
+                      padding: 0 30px;
+                      width: 100%;
                     }
                     img {
                       max-width: 100%;
@@ -358,13 +344,27 @@ jobs:
                     pre {
                       white-space: pre-wrap;
                       word-wrap: break-word;
+                      overflow-x: hidden;
                     }
                     /* HTMLから抽出したスタイル */
                     ${htmlContent.match(/<style>([\s\S]*?)<\/style>/)?.[1] || ''}
                   </style>
                 </head>
                 <body>
-                  ${htmlContent.match(/<body>([\s\S]*?)<\/body>/)?.[1] || ''}
+                  <div class="pdf-content">
+                    ${htmlContent.match(/<body>([\s\S]*?)<\/body>/)?.[1] || ''}
+                  </div>
+                  
+                  <!-- PDF生成用のスクリプト -->
+                  <script>
+                    // ページ全体の幅を最大化
+                    document.body.style.width = '100%';
+                    document.documentElement.style.width = '100%';
+                    
+                    // ヘッダーとフッター用の空間を確保しつつコンテンツを左右いっぱいに
+                    document.querySelector('.pdf-content').style.paddingTop = '60px';
+                    document.querySelector('.pdf-content').style.paddingBottom = '60px';
+                  </script>
                 </body>
                 </html>
               `;
@@ -379,18 +379,11 @@ jobs:
                 timeout: 60000 
               });
               
-              // 追加の日本語フォント設定
-              await page.evaluateHandle(() => {
-                document.querySelectorAll('*').forEach(el => {
-                  const style = window.getComputedStyle(el);
-                  if (style.fontFamily) {
-                    el.style.fontFamily = '"IPAGothic", "Noto Sans CJK JP", ' + style.fontFamily;
-                  }
-                });
+              // ページサイズを設定（A4の幅を明示的に指定）
+              await page.evaluate(() => {
+                document.body.style.width = '21cm'; // A4の幅
+                document.documentElement.style.width = '21cm';
               });
-              
-              // 現在の日付を日本語形式で取得
-              const currentDate = formatJapaneseDate(new Date());
               
               // PDF生成 - ヘッダーとフッターを設定、左右のマージンを0に
               await page.pdf({
@@ -401,24 +394,25 @@ jobs:
                 // ヘッダーテンプレート - タイトルと日付を表示
                 headerTemplate: `
                   <div style="width: 100%; font-size: 10pt; font-family: IPAGothic, Noto Sans CJK JP, sans-serif; 
-                       padding: 10px 20px; margin-bottom: 10px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between;">
-                    <div>${title}</div>
-                    <div>${currentDate}</div>
+                       padding: 10px; margin: 0; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between;">
+                    <div style="margin-left: 10px;">${title}</div>
+                    <div style="margin-right: 10px;">${currentDate}</div>
                   </div>
                 `,
                 // フッターテンプレート - ページ番号/総ページ数を表示
                 footerTemplate: `
                   <div style="width: 100%; font-size: 10pt; font-family: IPAGothic, Noto Sans CJK JP, sans-serif; 
-                       padding: 10px 20px; border-top: 1px solid #ddd; text-align: right;">
-                    <span><span class="pageNumber"></span>/<span class="totalPages"></span></span>
+                       padding: 10px; margin: 0; border-top: 1px solid #ddd; text-align: right;">
+                    <div style="margin-right: 10px;"><span class="pageNumber"></span>/<span class="totalPages"></span></div>
                   </div>
                 `,
                 margin: {
-                  top: '100px',    // ヘッダー用の余白
-                  bottom: '80px',  // フッター用の余白
-                  left: '0',       // 左マージンを0に設定
-                  right: '0'       // 右マージンを0に設定
-                }
+                  top: '60px',      // ヘッダー用の余白
+                  bottom: '60px',   // フッター用の余白
+                  left: '0',        // 左マージンを0に設定
+                  right: '0'        // 右マージンを0に設定
+                },
+                preferCSSPageSize: false
               });
               
               // 一時ファイル削除
@@ -445,25 +439,26 @@ jobs:
                 const currentDate = formatJapaneseDate(new Date());
                 const title = path.basename(htmlPath, '.html');
                 
-                // wkhtmltopdfを使用した代替方法 - ヘッダーとフッターを設定、左右のマージンを0に
+                // wkhtmltopdfを使用した代替方法
                 const command = `wkhtmltopdf \
                   --encoding utf-8 \
                   --javascript-delay 1000 \
                   --no-stop-slow-scripts \
+                  --page-size A4 \
+                  --page-width 210mm \
+                  --enable-local-file-access \
+                  --zoom 0.97 \
                   --margin-top 25 \
                   --margin-bottom 25 \
                   --margin-left 0 \
                   --margin-right 0 \
-                  --page-size A4 \
-                  --enable-local-file-access \
+                  --disable-smart-shrinking \
                   --header-left "${title}" \
                   --header-right "${currentDate}" \
                   --header-line \
-                  --header-font-name "IPAGothic" \
-                  --header-font-size 10 \
+                  --header-spacing 10 \
                   --footer-right "ページ [page]/[topage]" \
-                  --footer-font-name "IPAGothic" \
-                  --footer-font-size 10 \
+                  --footer-spacing 10 \
                   --footer-line \
                   "${htmlPath}" "${pdfPath}"`;
                 
