@@ -407,7 +407,8 @@ jobs:
                 path: pdfPath,
                 // format: 'A4',
                 width: '210mm',
-                height: '297mm',
+                //height: '293mm',
+                height: '253mm',
                 printBackground: true,
                 displayHeaderFooter: true,
                 // ヘッダーテンプレート - タイトルと日付を表示
@@ -426,8 +427,8 @@ jobs:
                   </div>
                 `,
                 margin: {
-                  top: '60px',    // ヘッダー用の余白
-                  bottom: '60px',  // フッター用の余白
+                  top: '20mm',    // ヘッダー用の余白
+                  bottom: '20mm',  // フッター用の余白
                   left: '0',       // 左マージンを0に設定
                   right: '0'       // 右マージンを0に設定
                 },
