@@ -1,0 +1,118 @@
+name: Convert Markdown to PDF and HTML
+
+on:
+  push:
+    branches: [ main, master ]  # メインブランチへのプッシュで実行
+
+jobs:
+  convert-documents:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install dependencies
+        run: |
+          npm install -g markdown-pdf
+          npm install -g showdown
+
+      - name: Convert markdown files to PDF and HTML
+        run: |
+          mkdir -p output/pdf output/html
+          for file in $(find . -name "*.md" -not -path "./node_modules/*" -not -path "./.git/*"); do
+            filename=$(basename "$file" .md)
+            echo "Converting $file to PDF..."
+            markdown-pdf "$file" -o "./output/pdf/$filename.pdf"
+            
+            echo "Converting $file to HTML..."
+            showdown makehtml -i "$file" -o "./output/html/$filename.html"
+          done
+
+      - name: Generate index.html with file listing
+        run: |
+          echo '<!DOCTYPE html>
+          <html lang="ja">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Markdown Documents</title>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px;
+              }
+              h1 {
+                text-align: center;
+              }
+              .section {
+                margin-bottom: 30px;
+              }
+              .file-list {
+                list-style-type: none;
+                padding: 0;
+              }
+              .file-list li {
+                margin: 8px 0;
+                padding: 8px;
+                background-color: #f5f5f5;
+                border-radius: 4px;
+              }
+              .file-list a {
+                text-decoration: none;
+                color: #0366d6;
+              }
+              .file-list a:hover {
+                text-decoration: underline;
+              }
+            </style>
+          </head>
+          <body>
+            <h1>Markdown Documents</h1>
+            
+            <div class="section">
+              <h2>HTML Versions</h2>
+              <ul class="file-list">' > index.html
+          
+          # HTMLファイルリストを生成
+          for file in output/html/*.html; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              name="${filename%.*}"
+              echo "<li><a href=\"$file\">$name</a></li>" >> index.html
+            fi
+          done
+          
+          echo '</ul>
+            </div>
+            
+            <div class="section">
+              <h2>PDF Versions</h2>
+              <ul class="file-list">' >> index.html
+          
+          # PDFファイルリストを生成
+          for file in output/pdf/*.pdf; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              name="${filename%.*}"
+              echo "<li><a href=\"$file\">$name</a></li>" >> index.html
+            fi
+          done
+          
+          echo '</ul>
+            </div>
+          </body>
+          </html>' >> index.html
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
+          keep_files: false
