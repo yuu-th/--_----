@@ -337,6 +337,7 @@ jobs:
                     }
                     @page {
                       size: A4;
+                      margin: 0;
                     }
                     /* ルートのスタイルを埋め込み */
                     ${rootStyleContent}
@@ -348,9 +349,15 @@ jobs:
                     html, body {
                       font-family: "IPAGothic", "Noto Sans CJK JP", "TakaoGothic", sans-serif !important;
                       line-height: 1.8;
-                      padding: 20px;
+                      padding: 0;
+                      padding-top: 20px;
+                      padding-bottom: 20px;
                       margin: 0;
                       width: 100%;
+                    }
+                    .content-wrapper{
+                      padding-left: 20px;
+                      padding-right: 20px;
                     }
                     img {
                       max-width: 100%;
@@ -365,7 +372,9 @@ jobs:
                   </style>
                 </head>
                 <body>
-                  ${htmlContent.match(/<body>([\s\S]*?)<\/body>/)?.[1] || ''}
+                  <div class="content-wrapper">
+                    ${htmlContent.match(/<body>([\s\S]*?)<\/body>/)?.[1] || ''}
+                  <\div>
                 </body>
                 </html>
               `;
@@ -396,7 +405,9 @@ jobs:
               // PDF生成 - ヘッダーとフッターを設定、左右のマージンを0に
               await page.pdf({
                 path: pdfPath,
-                format: 'A4',
+                // format: 'A4',
+                width: '210mm',
+                height: '297mm',
                 printBackground: true,
                 displayHeaderFooter: true,
                 // ヘッダーテンプレート - タイトルと日付を表示
@@ -415,11 +426,12 @@ jobs:
                   </div>
                 `,
                 margin: {
-                  top: '100px',    // ヘッダー用の余白
-                  bottom: '80px',  // フッター用の余白
+                  top: '60px',    // ヘッダー用の余白
+                  bottom: '60px',  // フッター用の余白
                   left: '0',       // 左マージンを0に設定
                   right: '0'       // 右マージンを0に設定
-                }
+                },
+                preferCSSPageSize: true
               });
               
               // 一時ファイル削除
@@ -455,6 +467,7 @@ jobs:
                   --margin-bottom 25 \
                   --margin-left 0 \
                   --margin-right 0 \
+                  --disable-smart-shrinking \
                   --page-size A4 \
                   --enable-local-file-access \
                   --header-left "${title}" \
