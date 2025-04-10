@@ -1,0 +1,186 @@
+const fs = require('fs');
+const path = require('path');
+const marked = require('marked');
+
+function convertToHtml(mdFile, outputHtmlPath) {
+  try {
+    console.log(`Converting ${mdFile} to HTML...`);
+    const content = fs.readFileSync(mdFile, 'utf-8');
+    const html = marked.parse(content);
+    
+    const styledHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${path.basename(mdFile, '.md')}</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+          }
+          pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+          }
+          code {
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            background-color: rgba(27, 31, 35, 0.05);
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+          }
+          pre code {
+            background-color: transparent;
+            padding: 0;
+          }
+          blockquote {
+            border-left: 4px solid #ddd;
+            padding-left: 16px;
+            color: #555;
+            margin-left: 0;
+          }
+          img {
+            max-width: 100%;
+          }
+          table {
+            border-collapse: collapse;
+            width: 100%;
+          }
+          table, th, td {
+            border: 1px solid #ddd;
+          }
+          th, td {
+            padding: 8px 12px;
+          }
+          th {
+            background-color: #f6f8fa;
+          }
+        </style>
+      </head>
+      <body>
+        ${html}
+      </body>
+      </html>
+    `;
+    
+    fs.writeFileSync(outputHtmlPath, styledHtml);
+    return true;
+  } catch (error) {
+    console.error(`Error processing ${mdFile}:`, error);
+    return false;
+  }
+}
+
+function processMarkdownFiles() {
+  // Create output directory
+  if (!fs.existsSync('output/html')) {
+    fs.mkdirSync('output/html', { recursive: true });
+  }
+
+  // Find all markdown files
+  const getFiles = (dir, ext, files = []) => {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      
+      if (entry.isDirectory() && entry.name !== 'node_modules' && entry.name !== '.git' && entry.name !== 'output') {
+        getFiles(fullPath, ext, files);
+      } else if (entry.isFile() && entry.name.endsWith(ext)) {
+        files.push(fullPath);
+      }
+    }
+    
+    return files;
+  };
+
+  const mdFiles = getFiles('.', '.md');
+  console.log(`Found ${mdFiles.length} markdown files`);
+  
+  const htmlFiles = [];
+
+  for (const mdFile of mdFiles) {
+    const baseName = path.basename(mdFile, '.md');
+    const relativePath = path.dirname(mdFile).replace('./', '');
+    let outputDir = '';
+    
+    // Create nested directory structure in output if needed
+    if (relativePath && relativePath !== '.') {
+      outputDir = relativePath + '/';
+      if (!fs.existsSync(`output/html/${relativePath}`)) {
+        fs.mkdirSync(`output/html/${relativePath}`, { recursive: true });
+      }
+    }
+    
+    const htmlPath = `output/html/${outputDir}${baseName}.html`;
+    
+    if (convertToHtml(mdFile, htmlPath)) {
+      const displayPath = outputDir ? `${outputDir}${baseName}` : baseName;
+      htmlFiles.push({ name: displayPath, path: htmlPath });
+    }
+  }
+
+  // Generate index.html
+  const indexHtml = `
+  <!DOCTYPE html>
+  <html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Documents</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      h1 {
+        text-align: center;
+      }
+      .section {
+        margin-bottom: 30px;
+      }
+      .file-list {
+        list-style-type: none;
+        padding: 0;
+      }
+      .file-list li {
+        margin: 8px 0;
+        padding: 8px;
+        background-color: #f5f5f5;
+        border-radius: 4px;
+      }
+      .file-list a {
+        text-decoration: none;
+        color: #0366d6;
+      }
+      .file-list a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Markdown Documents</h1>
+    
+    <div class="section">
+      <h2>HTML Versions</h2>
+      <ul class="file-list">
+        ${htmlFiles.map(file => `<li><a href="${file.path}">${file.name}</a></li>`).join('\n')}
+      </ul>
+    </div>
+  </body>
+  </html>
+  `;
+
+  fs.writeFileSync('index.html', indexHtml);
+  console.log('Generated index.html with links to all converted files');
+}
+
+processMarkdownFiles();
