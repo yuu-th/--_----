@@ -4,6 +4,10 @@ on:
   push:
     branches: [ main, master ]
 
+# ワークフローに明示的な権限を設定
+permissions:
+  contents: write
+
 jobs:
   convert-documents:
     runs-on: ubuntu-latest
@@ -215,9 +219,13 @@ jobs:
       - name: Convert files
         run: node convert.js
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./
-          keep_files: false
+      - name: Configure Git
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'github-actions@github.com'
+
+      - name: Commit changes
+        run: |
+          git add output/ index.html
+          git commit -m "Convert Markdown to HTML [automated]" || echo "No changes to commit"
+          git push origin HEAD:${GITHUB_REF#refs/heads/}
