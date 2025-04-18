@@ -5,7 +5,7 @@
 :root {
   /* Warm tech color palette with white background */
   --background: #ffffff;
-  --text-primary: #2d2926;
+  --text-primary: #333; /* 少し濃くしてコントラストを改善 */
   --accent-primary: #e8640c;
   --accent-secondary: #c76d35;
   --accent-tertiary: #f2a900;
@@ -27,7 +27,7 @@ body {
   font-family: "Inter", "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   background-color: var(--background);
   color: var(--text-primary);
-  line-height: 1.6;
+  line-height: 1.4; /* 行間を少し広げる */
   margin: 0;
   padding: 2rem;
   max-width: 960px;
@@ -44,12 +44,12 @@ h6 {
   margin-top: 2em;
   margin-bottom: 0.8em;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.3; /* ヘッダーの行間を調整 */
 }
 
 /* H1: Bold with horizontal bar */
 h1 {
-  font-size: 2.5rem;
+  font-size: 2.6rem; /* 少し大きく */
   color: var(--accent-primary);
   border-bottom: 4px solid var(--accent-primary);
   padding-bottom: 0.3em;
@@ -69,7 +69,7 @@ h1::after {
 
 /* H2: With left accent bar */
 h2 {
-  font-size: 2rem;
+  font-size: 2.1rem; /* 少し大きく */
   color: var(--accent-secondary);
   padding-left: 1rem;
   border-left: 6px solid var(--accent-secondary);
@@ -88,7 +88,7 @@ h2::before {
 
 /* H3: With underline gradient */
 h3 {
-  font-size: 1.75rem;
+  font-size: 1.8rem; /* 少し大きく */
   color: #9a6a32;
   background: linear-gradient(to right, var(--accent-secondary), transparent);
   background-position: bottom;
@@ -145,8 +145,11 @@ h6::before {
 
 /* Paragraph styling */
 p {
-  margin-bottom: 1.5em;
+  margin-bottom: 0.5em;
+  font-size: 1.05rem; /* 本文のフォントサイズを少し大きく */
+  line-height: 1.6; /* 本文の行間をさらに調整 */
 }
+
 /* 強調テキスト (strong) のスタイル強化 */
 strong {
   font-weight: bolder;
@@ -181,6 +184,7 @@ pre {
   overflow-x: auto;
   box-shadow: var(--shadow-md);
   border-left: 4px solid var(--accent-primary);
+  line-height: 1.5; /* コードブロックの行間調整 */
 }
 
 code {
@@ -212,11 +216,41 @@ blockquote {
 /* Lists */
 ul,
 ol {
-  padding-left: 1.5rem;
+  padding-left: 2rem; /* インデントを少し増やす */
+  /* margin-bottom: 1.5em; リスト全体の下マージン */
 }
 
 li {
-  margin-bottom: 0.5rem;
+  /* margin-bottom: 0.8rem; リスト項目間のスペースを調整 */
+  /* line-height: 1.7; リスト項目の行間を調整 */
+}
+
+/* ネストされたリストのインデント調整 */
+ul ul,
+ol ol,
+ul ol,
+ol ul {
+  /* margin-top: 0.5rem; */
+  /* margin-bottom: 0.5rem; */
+  padding-left: 1.5rem; /* ネストされたリストのインデント */
+}
+
+/* リストマーカーのスタイル */
+ul {
+  list-style-type: disc; /* デフォルトの黒丸 */
+}
+
+ol {
+  list-style-type: decimal; /* 数字 */
+}
+
+ul li::marker {
+  color: var(--accent-secondary); /* マーカーの色を変更 */
+}
+
+ol li::marker {
+  color: var(--accent-primary); /* マーカーの色を変更 */
+  font-weight: bold;
 }
 
 /* Tables */
@@ -227,18 +261,20 @@ table {
   border-radius: 5px;
   overflow: hidden;
   box-shadow: var(--shadow-sm);
+  font-size: 0.95rem; /* テーブル内の文字サイズ調整 */
 }
 
 th {
   background-color: var(--accent-secondary);
   color: var(--background);
   text-align: left;
-  padding: 0.8rem;
+  padding: 1rem; /* ヘッダーのパディング調整 */
 }
 
 td {
-  padding: 0.8rem;
+  padding: 1rem; /* セルのパディング調整 */
   border-bottom: 1px solid var(--border-color);
+  vertical-align: top; /* セル内のテキストを上揃えに */
 }
 
 tr:nth-child(even) {
@@ -250,7 +286,7 @@ hr {
   border: 0;
   height: 2px;
   background: linear-gradient(to right, var(--accent-primary), var(--accent-tertiary), transparent);
-  margin: 2rem 0;
+  margin: 2.5rem 0; /* 区切り線の上下マージン調整 */
 }
 
 /* Images */
@@ -259,6 +295,7 @@ img {
   height: auto;
   border-radius: 5px;
   box-shadow: var(--shadow-md);
+  margin: 1em 0; /* 画像の上下マージン */
 }
 
 /* Highlight text */
@@ -294,6 +331,8 @@ mark {
     color: black;
     padding: 0;
     margin: 0;
+    font-size: 10pt; /* 印刷時のフォントサイズ調整 */
+    line-height: 1.4;
   }
 
   h1,
@@ -317,6 +356,31 @@ mark {
     color: black;
     text-decoration: underline;
     border-bottom: none;
+  }
+
+  pre {
+    background-color: #eee;
+    color: #333;
+    border-left: 2px solid #ccc;
+  }
+
+  :not(pre) > code {
+    background-color: #eee;
+    color: #333;
+  }
+
+  blockquote {
+    border-left: 2px solid #ccc;
+    background-color: #f9f9f9;
+  }
+
+  table,
+  th,
+  td {
+    border: 1px solid #ccc;
+  }
+  th {
+    background-color: #eee;
   }
 }
 
@@ -342,6 +406,18 @@ mark {
   :not(pre) > code {
     background-color: #3d3028;
   }
+
+  ul li::marker {
+    color: #ffb74d; /* ダークモードでのマーカー色 */
+  }
+
+  ol li::marker {
+    color: #ff9e4f; /* ダークモードでのマーカー色 */
+  }
+
+  tr:nth-child(even) {
+    background-color: #352e28; /* ダークモードでのテーブル背景色 */
+  }
 }
 
 /* Custom classes for specific styles */
@@ -364,7 +440,7 @@ mark {
   background-color: #fffbe9; /* より紙っぽい色合い */
   border: 1px solid #e6d9a5; /* やや薄い枠線 */
   border-left: 4px solid var(--accent-tertiary);
-  padding: 0.8em 0em;
+  padding: 0.8em 1em; /* パディング調整 */
   margin: 1em 0;
   font-size: 0.9em;
   color: #5d4037; /* 暖かみのある褐色のテキスト */
