@@ -1,0 +1,77 @@
+* {
+  margin: 10px;
+  padding: 0;
+}
+
+body {
+  background-color: #fdf8f0; /* ページ背景色 */
+  padding: 50px; /* ページ全体の余白 */
+}
+
+h1 {
+  font-size: 24px;
+  font-weight: bold;
+  padding-bottom: 10px; /* タイトル下の余白 */
+  border-bottom: 2px solid #000000; /* テーマカラー例 */
+
+  color: #333;
+  margin-bottom: 20px; /* タイトル下の余白 */
+}
+
+strong {
+  font-weight: bold; /* bold */
+  color: #e85a4f; /* テーマカラー例 */
+  text-decoration: underline;
+}
+
+/* 商品カード全体 */
+.product-card {
+  background-color: #ffffff;
+  width: 500px;
+  border-radius: 10px;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7); /* カードの影 */
+  margin-bottom: 20px; /* 商品カード間の余白 */
+}
+
+/* 商品画像 */
+.product-image {
+  width: 480px;
+  height: auto;
+}
+
+/* 商品情報エリア */
+.product-content {
+  padding: 20px;
+}
+
+/* 商品名 */
+.product-name {
+  font-size: 18px;
+  font-weight: 700; /* bold */
+  color: #333;
+  margin-bottom: 8px;
+}
+
+/* 商品説明 */
+.product-description {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 15px;
+}
+
+/* 価格 */
+.product-price {
+  font-size: 18px;
+  font-weight: 700; /* bold */
+  color: #e85a4f; /* テーマカラー例 */
+}
+
+/* 購入ボタン */
+.buy-button {
+  background-color: #e85a4f; /* テーマカラー例 */
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 5px;
+  font-size: 14px;
+}

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>セマンティックなページ</title>
+    <style>
+
+        body {
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 10px 0;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            margin: 0;
+        }
+
+        nav ul {
+            padding: 0;
+            list-style: none;
+            text-align: center;
+            background: #444;
+            margin-top: 10px;
+        }
+
+        nav li {
+            display: inline;
+        }
+
+        nav a {
+            color: #fff;
+            text-decoration: none;
+            padding: 10px 15px;
+            display: inline-block;
+        }
+
+
+
+        article {
+            float: left;
+            width: 65%;
+            margin-right: 2%;
+            margin-left: 2%;
+        }
+
+        aside {
+            float: left;
+            width: 25%;
+        }
+
+        section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #e9e9e9;
+            border-radius: 5px;
+        }
+
+        h2,
+        h3 {
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+        }
+
+
+        video {
+            display: block;
+            margin: 0 auto;
+        }
+
+        figure {
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+
+        }
+
+        figure img {
+            display: block;
+            margin: 0 auto;
+        }
+
+        figcaption {
+            font-style: italic;
+            color: #555;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        details {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+
+        summary {
+            font-weight: bold;
+        }
+
+
+        footer {
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            padding: 15px 0;
+            margin-top: 30px;
+            clear: both;
+            /* float解除のため */
+        }
+
+        footer p {
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>情研技術ブログ</h1>
+        <nav>
+            <ul>
+                <li><a href="#home">ホーム</a></li>
+                <li><a href="#about">このブログについて</a></li>
+                <li><a href="#contact">お問い合わせ</a></li>
+            </ul>
+    </header>
+
+    <main>
+        <article>
+            <h2>最新技術トレンド：2xxx年版</h2>
+            <p>注目すべき技術トレンドについて解説します。AI、Web3、そしてサステナブルなテクノロジーが鍵となります。</p>
+
+            <section>
+                <h3>紹介ビデオ</h3>
+                <p>以下のビデオで概要をご覧ください。</p>
+                <!-- video要素 -->
+                <video controls>
+                    <!-- 実際の動画ファイルがあればsrcに指定 -->
+                    <!-- <source src="movie.mp4" type="video/mp4"> -->
+                    <!-- <source src="movie.webm" type="video/webm"> -->
+                </video>
+            </section>
+
+            <section>
+                <h3>フロントエンド開発の基盤</h3>
+                <p>フロントエンド開発では、HTML5が重要です。</p>
+                <figure>
+                    <img src="image.png"/>
+                    <figcaption>図1：HTMLのロゴ</figcaption>
+                </figure>
+            </section>
+
+            <section>
+                <h3>さらに詳しい情報</h3>
+                <!-- detailsとsummary -->
+                <details>
+                    <summary>開発者向け詳細情報はこちら</summary>
+                    <p>ここには、より専門的な情報や、参考文献へのリンクなどが記載されます。</p>
+                    <ul>
+                        <li>詳細ドキュメント</li>
+                        <li>関連研究論文</li>
+                    </ul>
+                </details>
+            </section>
+        </article>
+
+        <aside>
+            <h3>関連イベント会場</h3>
+            <p>次回の技術カンファレンスの会場はこちらです。</p>
+            <!-- iframe (Google Map) -->
+            <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3281.139132099954!2d135.4993623152315!3d34.6764339804408!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6000e0cd1f35910b%3A0x861e6a7f3f7b6e8d!2z5aSn6Ziq5bel5qWt5aSn5a2mIOOCreODo-ODs-OCuA!5e0!3m2!1sja!2sjp!4v1678886400000!5m2!1sja!2sjp"
+                width="100%" height="300" style="border: 0" allowfullscreen="" loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade" title="イベント会場の地図">
+            </iframe>
+            <p><small>※地図はダミーです。</small></p>
+        </aside>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 架空の技術ブログ</p>
+    </footer>
+</body>
+
+</html>
