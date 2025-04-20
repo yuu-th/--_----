@@ -269,6 +269,97 @@
 </ul>
 <p>HTMLはWeb制作の第一歩です。まずはこのHTMLでページの構造をしっかり作れるようになることが大切です。</p>
 <p>次のステップでは、<strong>CSS (Cascading Style Sheets)</strong> という別の言語を学びます。CSSを使うと、HTMLで作った骨組みに色を付けたり、レイアウトを整えたりして、Webページの <strong>見た目をデザイン</strong> することができます。HTMLとCSSを組み合わせることで、本格的なWebページが作れるようになります。</p>
+<h2>補足：タグの表示タイプ</h2>
+<p>HTMLのタグには、表示されるとき、主に3つの「表示され方」のタイプがあります。今後学ぶCSSの<code>display</code>というプロパティで設定され、初期値はタグによって決まっています。</p>
+<p>このプロパティよって、「改行されるか？」「幅や高さを変えられるか？」が変わります。
+特に<strong>改行についてうまくいかないときに</strong>この知識が必要になります。</p>
+<h3>1. ブロックタイプ (<code>display: block</code>)</h3>
+<p>特徴</p>
+<ul>
+<li>前後で<strong>勝手に改行</strong></li>
+<li>幅や高さを自分で決められる</li>
+<li>特に幅を指定しない場合、、左右のスペースが最大に広がる</li>
+</ul>
+<p>タグの例</p>
+<ul>
+<li><code>&lt;h1&gt;</code>～<code>&lt;h6&gt;</code> (見出し)、<code>&lt;p&gt;</code> (段落)、<code>&lt;div&gt;</code> (グループ化の箱)</li>
+<li><code>&lt;ul&gt;</code>, <code>&lt;ol&gt;</code>, <code>&lt;li&gt;</code> (リスト)、<code>&lt;hr&gt;</code> (線)</li>
+<li><code>&lt;header&gt;</code>, <code>&lt;footer&gt;</code>, <code>&lt;article&gt;</code> などのセマンティックタグ</li>
+</ul>
+<pre><code class="language-html">&lt;div style=&quot;border: 1px solid red;&quot;&gt;ブロックタイプ。改行される&lt;/div&gt;
+&lt;p style=&quot;border: 1px solid blue;&quot;&gt;ブロックタイプ 幅も高さも変えられる！&lt;/p&gt;
+&lt;!-- 自動的に縦に並んで、横幅いっぱいに広がろうとするのが特徴 --&gt;
+</code></pre>
+<h3>2. インラインタイプ (<code>display: inline</code>)</h3>
+<p>特徴</p>
+<ul>
+<li>前後で改行されず、<strong>横に並ぶ</strong></li>
+<li>幅や高さを指定しても<strong>無視される</strong>（中の文字や画像のサイズで決まる）</li>
+<li>上下の <code>margin</code>（外側の余白）は効かない（左右は効く）</li>
+<li><code>padding</code>（内側の余白）は上下左右に効くが、レイアウトに影響するのは左右のみ</li>
+</ul>
+<p>タグの例</p>
+<ul>
+<li><code>&lt;a&gt;</code> (リンク)、<code>&lt;span&gt;</code> (グループ化)</li>
+<li><code>&lt;strong&gt;</code>, <code>&lt;em&gt;</code>, <code>&lt;u&gt;</code> (文字装飾)</li>
+<li><code>&lt;input&gt;</code>, <code>&lt;button&gt;</code>, <code>&lt;label&gt;</code> (フォーム関連の一部)</li>
+</ul>
+<pre><code class="language-html">&lt;span style=&quot;border: 1px solid green;&quot;&gt;インラインタイプ。&lt;/span&gt;
+&lt;a href=&quot;#&quot; style=&quot;border: 1px solid purple;&quot;&gt;横に並びます。&lt;/a&gt;
+&lt;span style=&quot;border: 1px solid orange; width: 200px; height: 50px; margin-top: 20px; padding: 10px;&quot;&gt;幅や高さを指定しても効かない。上下マージンも効かない。&lt;/span&gt;
+&lt;!-- 文章の一部のように、行の中に埋め込まれるイメージ --&gt;
+</code></pre>
+<h3>3. インラインブロックタイプ (<code>display: inline-block</code>)</h3>
+<p>ブロックとインラインのいいとこ取りをしたようなタイプです。</p>
+<p>特徴</p>
+<ul>
+<li>前後で改行されず、<strong>横に並ぶ</strong>（インラインの特徴）</li>
+<li>幅や高さを<strong>自分で決められる</strong>（ブロックの特徴）</li>
+</ul>
+<p>タグの例</p>
+<ul>
+<li><code>&lt;img&gt;</code> (画像)</li>
+<li><code>&lt;button&gt;</code>, <code>&lt;input&gt;</code> (フォーム関連の一部)</li>
+</ul>
+<pre><code class="language-html">&lt;span style=&quot;display: inline-block; border: 1px solid teal; width: 150px; height: 50px; margin: 10px;&quot;&gt;インラインブロック。&lt;/span&gt;
+&lt;button style=&quot;display: inline-block; border: 1px solid brown; width: 100px; height: 50px; margin: 10px;&quot;&gt;幅も高さも指定できて、横に並ぶ！&lt;/button&gt;
+&lt;!-- 横に並べたいけど、サイズも指定したいときに便利 --&gt;
+</code></pre>
+<p>これらの表示タイプは、CSSで <code>display</code> プロパティを使って変更することもできます。例えば、<code>&lt;a&gt;</code> タグ（インライン）をボタンのように見せるために <code>display: inline-block;</code> や <code>display: block;</code> に変更することはよくあります。</p>
+<h3>表示タイプの比較まとめ</h3>
+<table>
+<thead>
+<tr>
+<th align="left">タイプ (<code>display</code>)</th>
+<th align="center">改行されるか？</th>
+<th align="center">幅・高さ指定</th>
+<th align="center">横に並ぶか？</th>
+<th align="left">タグの例 (初期値)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>block</code></td>
+<td align="center">する</td>
+<td align="center">できる</td>
+<td align="center">しない</td>
+<td align="left"><code>&lt;div&gt;</code>, <code>&lt;p&gt;</code>, <code>&lt;h1&gt;</code>, <code>&lt;ul&gt;</code> など</td>
+</tr>
+<tr>
+<td align="left"><code>inline</code></td>
+<td align="center">しない</td>
+<td align="center"><strong>できない</strong></td>
+<td align="center">する</td>
+<td align="left"><code>&lt;span&gt;</code>, <code>&lt;a&gt;</code>, <code>&lt;strong&gt;</code>, <code>&lt;em&gt;</code> など</td>
+</tr>
+<tr>
+<td align="left"><code>inline-block</code></td>
+<td align="center">しない</td>
+<td align="center">できる</td>
+<td align="center">する</td>
+<td align="left"><code>&lt;img&gt;</code>, <code>&lt;button&gt;</code>, <code>&lt;input&gt;</code> など</td>
+</tr>
+</tbody></table>
+<p>最初は混乱するかもしれませんが、「なんか表示が思った通りにならないな？」と思ったときに、この表示タイプの違いを思い出してみてください。</p>
 
       </body>
       </html>
