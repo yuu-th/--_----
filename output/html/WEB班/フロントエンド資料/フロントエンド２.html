@@ -309,6 +309,9 @@
 &lt;span style=&quot;border: 1px solid orange; width: 200px; height: 50px; margin-top: 20px; padding: 10px;&quot;&gt;幅や高さを指定しても効かない。上下マージンも効かない。&lt;/span&gt;
 &lt;!-- 文章の一部のように、行の中に埋め込まれるイメージ --&gt;
 </code></pre>
+<p>これらは、主にブロックタイプの要素の中に入れて使います。例えば、<code>&lt;p&gt;</code> タグの中に <code>&lt;a&gt;</code> タグを入れたり、<code>&lt;div&gt;</code> タグの中に <code>&lt;span&gt;</code> タグを入れたりします。そうでないと、改行がうまくいかないことがあるので注意が必要です。</p>
+<pre><code class="language-html">&lt;p&gt;これは段落(ブロックタイプ)の中に&lt;a href=&quot;#&quot;&gt;リンク&lt;/a&gt;がある例です。&lt;/p&gt;
+</code></pre>
 <h3>3. インラインブロックタイプ (<code>display: inline-block</code>)</h3>
 <p>ブロックとインラインのいいとこ取りをしたようなタイプです。</p>
 <p>特徴</p>
@@ -325,8 +328,14 @@
 &lt;button style=&quot;display: inline-block; border: 1px solid brown; width: 100px; height: 50px; margin: 10px;&quot;&gt;幅も高さも指定できて、横に並ぶ！&lt;/button&gt;
 &lt;!-- 横に並べたいけど、サイズも指定したいときに便利 --&gt;
 </code></pre>
+<p>このタイプは、特に画像やボタンなど、サイズを指定したいけど横に並べたいときに便利です。例えば、複数の画像を横に並べてギャラリーのように表示したいときなどに使います。</p>
+<p>また、ブロックタイプの要素の中にインラインブロックタイプを入れることもできます。例えば、<code>&lt;div&gt;</code> タグの中に <code>&lt;span&gt;</code> タグを入れたり、<code>&lt;p&gt;</code> タグの中に <code>&lt;button&gt;</code> タグを入れたりします。</p>
+<pre><code class="language-html">&lt;div style=&quot;border: 1px solid gray;&quot;&gt;
+  &lt;p&gt;これは段落の中に&lt;button&gt;ボタン&lt;/button&gt;がある例です。&lt;/p&gt;
+&lt;/div&gt;
+</code></pre>
+<h3>表示タイプのまとめ</h3>
 <p>これらの表示タイプは、CSSで <code>display</code> プロパティを使って変更することもできます。例えば、<code>&lt;a&gt;</code> タグ（インライン）をボタンのように見せるために <code>display: inline-block;</code> や <code>display: block;</code> に変更することはよくあります。</p>
-<h3>表示タイプの比較まとめ</h3>
 <table>
 <thead>
 <tr>
