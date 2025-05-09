@@ -559,6 +559,57 @@ console.log({} + []);      // 0 または &quot;[object Object]&quot; (環境や
 </li>
 </ol>
 <hr>
+<hr>
+<hr>
+<h3>演習の解答例</h3>
+<pre><code class="language-javascript">// 演習1: 自己紹介変数を作ろう！
+const myName = &quot;山田太郎&quot;; // あなたの名前に置き換えてください
+let myAge = 20; // あなたの年齢に置き換えてください
+const isStudent = true; // あなたが学生ならtrue、そうでなければfalse
+
+console.log(&quot;私の名前は&quot; + myName + &quot;です。&quot;);
+console.log(&quot;年齢は&quot; + myAge + &quot;歳です。&quot;);
+console.log(&quot;学生ですか？: &quot; + isStudent);
+
+// （おまけ）myAge の値を1増やして、再度表示
+myAge = myAge + 1; // myAge++; でも可
+console.log(&quot;1年後の年齢は&quot; + myAge + &quot;歳です。&quot;);
+
+console.log(&quot;---&quot;); // 区切り線
+
+// 演習2: データ型クイズ！
+console.log(&quot;データ型クイズ！&quot;);
+console.log(typeof &quot;NITAC&quot;);
+console.log(typeof 2023);
+console.log(typeof 3.14159);
+console.log(typeof true);
+console.log(typeof null); // &quot;object&quot; と表示されることに注意
+console.log(typeof undefined);
+console.log(typeof [&quot;apple&quot;, &quot;banana&quot;]); // &quot;object&quot; と表示されることに注意
+console.log(typeof { school: &quot;NITAC&quot;, department: &quot;IT&quot; });
+
+console.log(&quot;---&quot;); // 区切り線
+
+// 演習3: 型変換実験！
+console.log(&quot;型変換実験！&quot;);
+
+// 数値の 100 を文字列に変換
+let numToConvert = 100;
+let strFromNum = String(numToConvert);
+console.log(&quot;100を文字列に変換:&quot;, typeof strFromNum, strFromNum);
+
+// 文字列の &quot;50&quot; を数値に変換
+let strToConvert = &quot;50&quot;;
+let numFromStr = Number(strToConvert);
+console.log(&quot;\&quot;50\&quot;を数値に変換:&quot;, typeof numFromStr, numFromStr);
+
+// 様々な値をBooleanに変換
+console.log(&quot;0 をBooleanに変換:&quot;, Boolean(0));
+console.log(&quot;1 をBooleanに変換:&quot;, Boolean(1));
+console.log(&quot;\&quot;\&quot; (空文字列) をBooleanに変換:&quot;, Boolean(&quot;&quot;));
+console.log(&quot;\&quot;hello\&quot; をBooleanに変換:&quot;, Boolean(&quot;hello&quot;));
+</code></pre>
+<hr>
 <h2>まとめと次回予告</h2>
 <p>お疲れ様でした！今回は、プログラミングの基本中の基本である「変数」と「データ型」、そしてそれらに関連する「スコープ」や「型変換」について学びましたね。</p>
 <ul>
