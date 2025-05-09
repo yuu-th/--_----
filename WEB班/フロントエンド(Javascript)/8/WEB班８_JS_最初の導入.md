@@ -428,6 +428,64 @@ user.greet(); // こんにちは、山田太郎です！ と表示
     * 保存してブラウザで確認し、コンソールに正しく表示されるか見てみましょう。
 
 ---
+---
+---
+
+### 演習の解答例
+
+演習1、2、3の指示に従って、`js_practice` フォルダ内に以下の2つのファイルを作成してください。
+
+1. index.html
+2. `script.js`
+
+それぞれのファイルの内容は以下の通りです。
+
+````html
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaScript 演習</title>
+</head>
+<body>
+    <h1>JavaScriptの練習ページ</h1>
+    <p>ブラウザの開発者ツールを開いてコンソールを確認してください。</p>
+
+    <script src="script.js"></script>
+</body>
+</html>
+````
+
+````javascript
+// これはコンソールにメッセージを表示する命令です
+console.log("JavaScriptの練習開始！");
+
+/*
+  これはアラートダイアログを表示する命令です。
+  ユーザーに簡単な通知をするのに使えます。
+*/
+alert("HTMLとJSの連携成功！");
+
+// 自分の名前を表示
+console.log("高専太郎"); // ここはご自身の名前に置き換えてください
+
+// 好きな食べ物を表示
+console.log("カレーライス"); // ここはご自身の好きな食べ物に置き換えてください
+
+// 1 + 1 の計算結果を表示
+console.log(1 + 1);
+````
+
+**実行方法：**
+
+1. `js_practice` フォルダを作成します。
+2. 上記のコードをそれぞれ index.html と `script.js` という名前で `js_practice` フォルダ内に保存します。
+3. index.html ファイルをウェブブラウザで開きます。
+    * アラートが表示されることを確認してください。
+    * ブラウザの開発者ツール（通常はF12キーで開きます）のコンソールタブを開き、メッセージや計算結果が表示されていることを確認してください。
+
+---
 
 ## まとめと次回予告
 

@@ -625,6 +625,62 @@ JavaScriptは賢く型を推測しようとしますが、時にはおせっか�
     * `0` と `1` と空文字列 `""` と文字列 `"hello"` を、それぞれ `Boolean()` を使って真偽値に変換し、結果をコンソールに表示してください。何が `true` になり、何が `false` になるか確認しましょう。
 
 ---
+---
+---
+
+### 演習の解答例
+
+```javascript
+// 演習1: 自己紹介変数を作ろう！
+const myName = "山田太郎"; // あなたの名前に置き換えてください
+let myAge = 20; // あなたの年齢に置き換えてください
+const isStudent = true; // あなたが学生ならtrue、そうでなければfalse
+
+console.log("私の名前は" + myName + "です。");
+console.log("年齢は" + myAge + "歳です。");
+console.log("学生ですか？: " + isStudent);
+
+// （おまけ）myAge の値を1増やして、再度表示
+myAge = myAge + 1; // myAge++; でも可
+console.log("1年後の年齢は" + myAge + "歳です。");
+
+console.log("---"); // 区切り線
+
+// 演習2: データ型クイズ！
+console.log("データ型クイズ！");
+console.log(typeof "NITAC");
+console.log(typeof 2023);
+console.log(typeof 3.14159);
+console.log(typeof true);
+console.log(typeof null); // "object" と表示されることに注意
+console.log(typeof undefined);
+console.log(typeof ["apple", "banana"]); // "object" と表示されることに注意
+console.log(typeof { school: "NITAC", department: "IT" });
+
+console.log("---"); // 区切り線
+
+// 演習3: 型変換実験！
+console.log("型変換実験！");
+
+// 数値の 100 を文字列に変換
+let numToConvert = 100;
+let strFromNum = String(numToConvert);
+console.log("100を文字列に変換:", typeof strFromNum, strFromNum);
+
+// 文字列の "50" を数値に変換
+let strToConvert = "50";
+let numFromStr = Number(strToConvert);
+console.log("\"50\"を数値に変換:", typeof numFromStr, numFromStr);
+
+// 様々な値をBooleanに変換
+console.log("0 をBooleanに変換:", Boolean(0));
+console.log("1 をBooleanに変換:", Boolean(1));
+console.log("\"\" (空文字列) をBooleanに変換:", Boolean(""));
+console.log("\"hello\" をBooleanに変換:", Boolean("hello"));
+
+```
+
+---
 
 ## まとめと次回予告
 
